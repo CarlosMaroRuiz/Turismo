@@ -5,7 +5,7 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from .catalog import Search, ServiceKind, options, today
+from .catalog import Search, ServiceKind, availability, canonical, find_regions, options, today
 from .clients import Turismo, TurismoError
 
 
@@ -83,6 +83,20 @@ def parse_form(text: str, kind: ServiceKind | None) -> Search:
     )
 
 
+def clear_search_buttons(session: dict) -> None:
+    for key in ("options", "option_key", "search_choices"):
+        session.pop(key, None)
+
+
+def search_choices(session: dict, kind: str, values: list[dict], text: str) -> dict:
+    key = token_hex(6)
+    session["search_choices"] = {"kind": kind, "key": key, "values": values}
+    return message(text, *[
+        [button(choice["label"][:75], f"pick:{key}:{index}")]
+        for index, choice in enumerate(values)
+    ])
+
+
 class Turn(TypedDict):
     chat_id: int
     text: str
@@ -92,6 +106,67 @@ class Turn(TypedDict):
 
 
 def build_graph(api: Turismo, extractor):
+    async def show_availability(session: dict, criteria: Search) -> dict:
+        clear_search_buttons(session)
+        session["search"] = criteria.model_dump(mode="json")
+        question = missing_search_details(criteria)
+        if question:
+            return message(question)
+        assert criteria.start is not None and criteria.adults is not None and criteria.destination
+        if criteria.start < today():
+            return message("Elige una fecha de hoy en adelante.")
+        if criteria.kind == "hotel":
+            assert criteria.end is not None
+            if not 1 <= (criteria.end - criteria.start).days <= 30:
+                return message("Elige una estancia de 1 a 30 noches.")
+            if criteria.adults > 10 or (criteria.children or 0) > 10:
+                return message("La consulta de habitación admite hasta 10 adultos y 10 menores.")
+
+        destination_key = canonical(criteria.destination)
+        region = session.get("resolved_region")
+        if not region or region["query"] != destination_key:
+            region, candidates = await find_regions(api, criteria.destination)
+            if candidates:
+                choices = [
+                    {"id": candidate["id"], "name": candidate["name"],
+                     "label": " · ".join(filter(None, [candidate["name"], candidate.get("stateName")]))}
+                    for candidate in candidates
+                ]
+                return search_choices(session, "region", choices, "¿Cuál de estos destinos buscas?")
+            if region is None:
+                return message(f'No encontré «{criteria.destination}» en el catálogo. ¿Qué municipio o zona buscas?')
+            region = {"id": region["id"], "name": region["name"], "query": destination_key}
+            session["resolved_region"] = region
+
+        results = await options(api, criteria, region["id"])
+        if results:
+            session["options"] = results
+            session["option_key"] = token_hex(6)
+            rows = [
+                [button(f'{row["label"]} · {row["detail"]}'[:75], f'add:{session["option_key"]}:{index}')]
+                for index, row in enumerate(results)
+            ]
+            return message("Selecciona una opción para agregarla a tu cotización.", *rows)
+
+        dates = await availability(api, criteria, region["id"], flex_days=7)
+        nearby = [day["date"] for day in dates if day["date"] != criteria.start.isoformat()][:3]
+        summary = f'No encontré cupo en {region["name"]} para tu grupo el {criteria.start:%d/%m/%Y}.'
+        if nearby:
+            choices = []
+            for day in nearby:
+                alternative = date.fromisoformat(day)
+                label = f"{alternative:%d/%m/%Y}"
+                if criteria.kind == "hotel" and criteria.end is not None:
+                    label += f" al {alternative + (criteria.end - criteria.start):%d/%m/%Y}"
+                choices.append({"date": day, "label": label})
+            return search_choices(session, "date", choices, summary + " Tengo estas fechas cercanas.")
+
+        if criteria.adults + (criteria.children or 0) > 1:
+            smaller = await availability(api, criteria, region["id"], smaller_group=True)
+            if smaller:
+                return message(summary + " Hay opciones para grupos más pequeños en esa fecha. Puedes ajustar los viajeros o elegir otra fecha.")
+        return message(summary + " Puedes probar otra fecha o destino.")
+
     async def search(state: Turn) -> dict:
         session = state["session"]
         previous = Search.model_validate(session.get("search", {}))
@@ -110,6 +185,8 @@ def build_graph(api: Turismo, extractor):
                      "kind admite paquete, hotel o experiencia. Usa null para campos ausentes. "
                      "Si el mensaje dice «para adultos» sin un número, devuelve adults como null. "
                      "Un mensaje breve puede responder únicamente a un dato pendiente. "
+                     "Si corrige solo el día del mes, usa el mes y año de la fecha guardada. "
+                     "Si dice «ahora somos N» y no menciona menores, interpreta N como adultos. "
                      f"Resuelve fechas relativas desde {today().isoformat()}. "
                      f"Usa como contexto la búsqueda actual: {previous.model_dump_json()}. "
                      "Devuelve solo los campos que el último mensaje proporciona o corrige."),
@@ -125,54 +202,54 @@ def build_graph(api: Turismo, extractor):
                 return {"response": message(missing_search_details(previous) or search_prompt(previous.kind))}
             if data.kind and previous.kind and data.kind != previous.kind:
                 previous = Search()
-            criteria = Search.model_validate({
-                **previous.model_dump(exclude_none=True), **data.model_dump(exclude_none=True),
-            })
+            changes = data.model_dump(exclude_none=True)
+            if (previous.kind == "hotel" and previous.start and previous.end
+                    and previous.start < previous.end and data.start and data.end is None):
+                changes["end"] = data.start + (previous.end - previous.start)
+            criteria = Search.model_validate({**previous.model_dump(exclude_none=True), **changes})
         except ValueError:
             return {"response": message("Revisa el formato y las cantidades.\n" +
                                         (missing_search_details(previous) or search_prompt(previous.kind)))}
 
-        session["search"] = criteria.model_dump(mode="json")
-        question = missing_search_details(criteria)
-        if question:
-            return {"response": message(question)}
-        assert criteria.start is not None and criteria.adults is not None
-        if criteria.start < today():
-            return {"response": message("Elige una fecha de hoy en adelante.")}
-        if criteria.kind == "hotel":
-            assert criteria.end is not None
-            if not 1 <= (criteria.end - criteria.start).days <= 30:
-                return {"response": message("Elige una estancia de 1 a 30 noches.")}
-            if criteria.adults > 10 or (criteria.children or 0) > 10:
-                return {"response": message("La consulta de habitación admite hasta 10 adultos y 10 menores.")}
-
-        results = await options(api, criteria)
-        session["options"] = results
-        session["option_key"] = token_hex(6)
-        if not results:
-            return {"response": message(
-                "No encontré opciones para ese destino y fecha. Verifica el municipio o prueba otra fecha."
-            )}
-        rows = [
-            [button(f'{row["label"]} · {row["detail"]}'[:75], f'add:{session["option_key"]}:{index}')]
-            for index, row in enumerate(results)
-        ]
-        return {"response": message("Selecciona una opción para agregarla a tu cotización.", *rows)}
+        return {"response": await show_availability(session, criteria)}
 
     async def interaction(state: Turn) -> dict:
         session = state["session"]
         action = state["action"]
         if action == "start":
+            clear_search_buttons(session)
             return {"response": welcome()}
         if action.startswith("search:") and action.split(":")[1] in EXAMPLES:
             kind = action.split(":")[1]
             session["search"] = {"kind": kind}
-            session.pop("options", None)
+            clear_search_buttons(session)
             return {"response": message(search_prompt(kind))}
         if action == "clear":
-            for key in ("basket", "quote", "options", "search"):
+            for key in ("basket", "quote", "search", "resolved_region"):
                 session.pop(key, None)
+            clear_search_buttons(session)
             return {"response": welcome()}
+        if action.startswith("pick:"):
+            parts = action.split(":")
+            choices = session.get("search_choices")
+            if not choices or len(parts) != 3 or parts[1] != choices["key"] or not parts[2].isdigit():
+                return {"response": message("Estas opciones vencieron. Envía una nueva búsqueda.")}
+            index = int(parts[2])
+            if index >= len(choices["values"]):
+                return {"response": message("Opción no disponible.")}
+            choice = choices["values"][index]
+            criteria = Search.model_validate(session["search"])
+            if choices["kind"] == "region":
+                criteria.destination = choice["name"]
+                session["resolved_region"] = {
+                    "id": choice["id"], "name": choice["name"], "query": canonical(choice["name"]),
+                }
+            else:
+                start = date.fromisoformat(choice["date"])
+                if criteria.kind == "hotel" and criteria.start and criteria.end:
+                    criteria.end = start + (criteria.end - criteria.start)
+                criteria.start = start
+            return {"response": await show_availability(session, criteria)}
         if action.startswith("add:"):
             parts = action.split(":")
             results = session.get("options", [])

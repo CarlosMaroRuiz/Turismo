@@ -29,59 +29,61 @@ def canonical(text: str) -> str:
     return "".join(c for c in normalize("NFD", text.casefold()) if not combining(c)).strip()
 
 
-async def options(api: Turismo, search: Search) -> list[dict]:
-    assert search.destination and search.start and search.adults
-    regions = await api.request("GET", "/regions", params={"search": search.destination, "limit": 10})
-    matches = [
+async def find_regions(api: Turismo, destination: str) -> tuple[dict | None, list[dict]]:
+    regions = await api.request("GET", "/regions", params={"search": destination, "limit": 20})
+    exact = [
         region for region in regions
-        if canonical(search.destination) in {canonical(name) for name in [region["name"], *region.get("aliases", [])]}
+        if canonical(destination) in {canonical(name) for name in [region["name"], *region.get("aliases", [])]}
     ]
-    if len(matches) != 1:
-        return []
-    region = matches[0]
-    common = {"adults": search.adults, "children": search.children or 0}
-    starting = search.start.isoformat()
-    parameters = {"regionId": region["id"], "limit": 5}
+    return (exact[0], []) if len(exact) == 1 else (None, (exact or regions)[:6])
+
+
+async def availability(
+    api: Turismo, search: Search, region_id: str, *, flex_days: int = 0, smaller_group: bool = False,
+) -> list[dict]:
+    assert search.start and search.adults
+    adults, children = (1, 0) if smaller_group else (search.adults, search.children or 0)
+    params = {"regionId": region_id, "limit": 4 if flex_days else 5}
+    if flex_days:
+        params["flexDays"] = flex_days
     if search.kind == "hotel":
         assert search.end
-        ending = search.end.isoformat()
-        rooms = await api.request("GET", "/hotels/availability", params={
-            **parameters, **common, "checkIn": starting, "checkOut": ending,
+        return await api.request("GET", "/hotels/availability", params={
+            **params, "adults": adults, "children": children,
+            "checkIn": search.start.isoformat(), "checkOut": search.end.isoformat(),
         })
+    path = "/experiences/availability" if search.kind == "experiencia" else "/packages/availability"
+    return await api.request("GET", path, params={
+        **params, "date": search.start.isoformat(), "people": adults + children,
+    })
+
+
+async def options(api: Turismo, search: Search, region_id: str) -> list[dict]:
+    common = {"adults": search.adults, "children": search.children or 0}
+    rows = await availability(api, search, region_id)
+    if search.kind == "hotel":
         return [
             {
                 "label": f'{row["roomTypeName"]} · {row["partnerName"]}',
-                "detail": f'{starting} al {ending}',
+                "detail": f'{row["checkIn"]} al {row["checkOut"]}',
                 "item": {"type": "room_stay", "roomTypeId": row["roomTypeId"],
-                         "checkIn": starting, "checkOut": ending, **common},
+                         "checkIn": row["checkIn"], "checkOut": row["checkOut"], **common},
             }
-            for row in rooms
+            for row in rows
         ]
-    people = common["adults"] + common["children"]
     if search.kind == "experiencia":
-        slots = await api.request("GET", "/experiences/availability", params={
-            **parameters, "date": starting, "people": people,
-        })
         return [
             {
                 "label": row["experienceName"], "detail": f'{row["date"]} · {row["startTime"]}',
                 "item": {"type": "experience_slot", "slotId": row["slotId"], **common},
             }
-            for row in slots
+            for row in rows
         ]
 
-    packages = await api.request("GET", "/packages", params=parameters)
-    results = []
-    for package in packages:
-        if people < package["minTravelers"] or (
-            package["maxTravelers"] is not None and people > package["maxTravelers"]
-        ):
-            continue
-        detail = await api.request("GET", f'/packages/{package["id"]}')
-        for departure in detail["departures"]:
-            if departure["departureDate"] == starting and departure["availableSeats"] >= people:
-                results.append({
-                    "label": package["name"], "detail": starting,
-                    "item": {"type": "package_departure", "departureId": departure["id"], **common},
-                })
-    return results[:5]
+    return [
+        {
+            "label": row["packageName"], "detail": row["date"],
+            "item": {"type": "package_departure", "departureId": row["departureId"], **common},
+        }
+        for row in rows
+    ]
