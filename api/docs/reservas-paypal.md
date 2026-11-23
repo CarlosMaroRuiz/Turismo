@@ -1,6 +1,6 @@
 # Reservas de paquetes con PayPal
 
-El bot de Telegram se despliega desde el repositorio independiente `turismo-telegram-bot`. Turismo emite las cotizaciones y administra inventario, órdenes de pago y reservas.
+El bot de Telegram se despliega como servicio independiente desde la carpeta [`turismo-telegram-bot`](../../turismo-telegram-bot/README.md). Turismo emite las cotizaciones y administra inventario, órdenes de pago y reservas.
 
 ## Configuración
 
