@@ -57,6 +57,10 @@ export class RoomType {
   @Column({ type: "json" })
   amenities: string[];
 
+  // Galería: URLs de imágenes de la habitación.
+  @Column({ type: "json" })
+  images: string[];
+
   @Column({ name: "is_active", type: "boolean", default: true })
   isActive: boolean;
 

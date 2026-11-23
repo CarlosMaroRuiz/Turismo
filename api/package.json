@@ -18,8 +18,10 @@
     "build:test": "tsc -p tsconfig.test.json",
     "test:prepare": "node scripts/test-db.mjs",
     "test": "npm run build:test && npm run test:prepare && node dist-test/test/e2e/api.test.js",
-    "test:flow": "npm run build:test && npm run test:prepare && node dist-test/test/flow/agencia-paquetes.flow.test.js && node dist-test/test/flow/agente-cotizacion.flow.test.js",
-    "test:e2e": "npm test"
+    "test:flow": "npm run build:test && npm run test:prepare && node dist-test/test/flow/agencia-paquetes.flow.test.js && node dist-test/test/flow/agente-cotizacion.flow.test.js && node dist-test/test/flow/hotel-inventario.flow.test.js",
+    "test:e2e": "npm test",
+    "mail:check": "node scripts/mail-check.mjs",
+    "mail:test": "node scripts/mail-check.mjs --send"
   },
   "keywords": [],
   "author": "",

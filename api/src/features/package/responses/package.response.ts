@@ -51,6 +51,7 @@ export interface PackageSummaryResponse {
   minTravelers: number;
   maxTravelers: number | null;
   minPriceAdult: number | null;
+  images: string[];
   status: string;
   createdAt: Date;
 }

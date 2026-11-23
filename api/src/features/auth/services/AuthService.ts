@@ -54,7 +54,7 @@ export class AuthService {
   ): Promise<PartnerUser | null> {
     return this.partnerUserRepo.findOne({
       where: { userId, isActive: true },
-      relations: { partner: true },
+      relations: { partner: { category: true } },
     });
   }
 
@@ -98,6 +98,9 @@ export class AuthService {
           ? {
               id: partnerLink.partnerId,
               commercialName: partnerLink.partner?.commercialName ?? "",
+              categoryId: partnerLink.partner?.categoryId ?? "",
+              categoryCode: partnerLink.partner?.category?.code ?? "",
+              logoUrl: partnerLink.partner?.logoUrl ?? null,
               role: partnerLink.role,
             }
           : null,
@@ -262,6 +265,9 @@ export class AuthService {
             id: partnerLink.partnerId,
             commercialName: partnerLink.partner?.commercialName ?? "",
             slug: partnerLink.partner?.slug ?? "",
+            categoryId: partnerLink.partner?.categoryId ?? "",
+            categoryCode: partnerLink.partner?.category?.code ?? "",
+            logoUrl: partnerLink.partner?.logoUrl ?? null,
             role: partnerLink.role,
           }
         : null,

@@ -59,10 +59,13 @@ export class PartnerService {
     return {
       id: p.id,
       categoryId: p.categoryId,
+      categoryName: p.category?.name ?? "",
       regionId: p.regionId,
+      regionName: p.region?.name ?? "",
       commercialName: p.commercialName,
       legalName: p.legalName,
       slug: p.slug,
+      logoUrl: p.logoUrl,
       description: p.description,
       address: p.address,
       lat: p.lat,
@@ -195,6 +198,7 @@ export class PartnerService {
 
     const [partners, total] = await this.partnerRepo.findAndCount({
       ...(status !== undefined && { where: { status } }),
+      relations: { category: true, region: true },
       order: { createdAt: "DESC" },
       skip,
       take,
@@ -209,7 +213,10 @@ export class PartnerService {
   public async getPartnerById(
     partnerId: string
   ): Promise<PartnerSummaryResponse> {
-    const partner = await this.partnerRepo.findOne({ where: { id: partnerId } });
+    const partner = await this.partnerRepo.findOne({
+      where: { id: partnerId },
+      relations: { category: true, region: true },
+    });
 
     if (!partner) {
       throw new NotFoundError("Socio no encontrado");
@@ -222,7 +229,10 @@ export class PartnerService {
     partnerId: string,
     dto: UpdatePartnerDto
   ): Promise<PartnerSummaryResponse> {
-    const partner = await this.partnerRepo.findOne({ where: { id: partnerId } });
+    const partner = await this.partnerRepo.findOne({
+      where: { id: partnerId },
+      relations: { category: true, region: true },
+    });
 
     if (!partner) {
       throw new NotFoundError("Socio no encontrado");
@@ -299,6 +309,9 @@ export class PartnerService {
     }
     if (dto.contactPhone !== undefined) {
       partner.contactPhone = dto.contactPhone;
+    }
+    if (dto.logoUrl !== undefined) {
+      partner.logoUrl = dto.logoUrl;
     }
 
     await this.partnerRepo.save(partner);

@@ -3,6 +3,7 @@ import { SEEDER_REGISTRY } from "../seeds/utils/seed.decorator.js";
 
 // <SEEDERS_IMPORTS>
 import "../seeds/seeders/api-clients.seed.js";
+import "../seeds/seeders/demo-providers.seed.js";
 import "../seeds/seeders/partner-categories.seed.js";
 import "../seeds/seeders/roles.seed.js";
 import "../seeds/seeders/states.seed.js";

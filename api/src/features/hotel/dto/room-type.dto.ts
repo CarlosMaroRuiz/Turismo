@@ -10,6 +10,7 @@ export const createRoomTypeSchema = z.object({
   totalUnits: z.number().int().min(1).max(500).default(1),
   basePrice: z.number().positive().max(1_000_000),
   amenities: z.array(z.string().trim().min(1).max(60)).max(30).default([]),
+  images: z.array(z.string().url("Cada imagen debe ser una URL válida")).max(20).default([]),
   isActive: z.boolean().default(true),
 });
 
@@ -22,6 +23,7 @@ export const updateRoomTypeSchema = z
     totalUnits: z.number().int().min(1).max(500).optional(),
     basePrice: z.number().positive().max(1_000_000).optional(),
     amenities: z.array(z.string().trim().min(1).max(60)).max(30).optional(),
+    images: z.array(z.string().url("Cada imagen debe ser una URL válida")).max(20).optional(),
     isActive: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {

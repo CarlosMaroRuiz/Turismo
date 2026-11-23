@@ -1,10 +1,13 @@
 export interface PartnerSummaryResponse {
   id: string;
   categoryId: string;
+  categoryName: string;
   regionId: string;
+  regionName: string;
   commercialName: string;
   legalName: string;
   slug: string;
+  logoUrl: string | null;
   description: string | null;
   address: string;
   lat: number | null;

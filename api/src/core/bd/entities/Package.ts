@@ -54,6 +54,10 @@ export class Package {
   @Column({ type: "text" })
   description: string;
 
+  // Galería: URLs de imágenes (la subida de archivos no está implementada).
+  @Column({ type: "json" })
+  images: string[];
+
   // Los días se calculan: noches + 1
   @Column({ type: "int" })
   nights: number;

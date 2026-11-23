@@ -22,6 +22,7 @@ export interface ExperienceSummaryResponse {
   minAge: number | null;
   priceAdult: number;
   priceChild: number | null;
+  images: string[];
   isActive: boolean;
   createdAt: Date;
 }

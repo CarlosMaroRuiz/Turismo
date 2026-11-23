@@ -9,6 +9,7 @@ export interface RoomTypeResponse {
   totalUnits: number;
   basePrice: number;
   amenities: string[];
+  images: string[];
   isActive: boolean;
   createdAt: Date;
 }

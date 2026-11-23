@@ -59,6 +59,10 @@ export class Partner {
   @Column({ type: "varchar", length: 180 })
   slug: string;
 
+  // Logo del socio: URL externa (sin subida de archivos por ahora).
+  @Column({ name: "logo_url", type: "varchar", length: 500, nullable: true })
+  logoUrl: string | null;
+
   @Column({ type: "text", nullable: true })
   description: string | null;
 

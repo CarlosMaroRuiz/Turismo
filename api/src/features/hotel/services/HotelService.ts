@@ -177,6 +177,7 @@ export class HotelService {
       totalUnits: roomType.totalUnits,
       basePrice: Number(roomType.basePrice),
       amenities: roomType.amenities ?? [],
+      images: roomType.images ?? [],
       isActive: roomType.isActive,
       createdAt: roomType.createdAt,
     };
@@ -265,6 +266,7 @@ export class HotelService {
         totalUnits: dto.totalUnits,
         basePrice: dto.basePrice,
         amenities: dto.amenities,
+        images: dto.images,
         isActive: dto.isActive,
       })
     );
@@ -287,6 +289,7 @@ export class HotelService {
     if (dto.totalUnits !== undefined) roomType.totalUnits = dto.totalUnits;
     if (dto.basePrice !== undefined) roomType.basePrice = dto.basePrice;
     if (dto.amenities !== undefined) roomType.amenities = dto.amenities;
+    if (dto.images !== undefined) roomType.images = dto.images;
     if (dto.isActive !== undefined) roomType.isActive = dto.isActive;
 
     await this.roomTypeRepo.save(roomType);

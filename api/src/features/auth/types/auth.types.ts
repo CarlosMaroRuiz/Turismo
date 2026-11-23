@@ -3,4 +3,7 @@ export interface AuthPartnerSummary {
   commercialName: string;
   slug: string;
   role: string;
+  categoryId: string;
+  categoryCode: string;
+  logoUrl: string | null;
 }

@@ -163,6 +163,7 @@ export class PackageService {
       minTravelers: pkg.minTravelers,
       maxTravelers: pkg.maxTravelers,
       minPriceAdult,
+      images: pkg.images ?? [],
       status: pkg.status,
       createdAt: pkg.createdAt,
     };
@@ -399,6 +400,7 @@ export class PackageService {
         requirements: dto.requirements ?? null,
         cancellationPolicy: dto.cancellationPolicy,
         taxesIncluded: dto.taxesIncluded,
+        images: dto.images,
         status: PackageStatus.DRAFT,
       });
       await manager.save(pkg);
@@ -501,6 +503,7 @@ export class PackageService {
         scalarUpdates.cancellationPolicy = dto.cancellationPolicy;
       if (dto.taxesIncluded !== undefined)
         scalarUpdates.taxesIncluded = dto.taxesIncluded;
+      if (dto.images !== undefined) scalarUpdates.images = dto.images;
 
       if (Object.keys(scalarUpdates).length > 0) {
         await manager.update(Package, pkg.id, scalarUpdates);

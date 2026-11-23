@@ -16,6 +16,7 @@ export const createExperienceSchema = z.object({
   priceAdult: z.number().positive().max(1_000_000),
   priceChild: z.number().positive().max(1_000_000).nullable().optional(),
   requirements: z.string().trim().max(2000).nullable().optional(),
+  images: z.array(z.string().url("Cada imagen debe ser una URL válida")).max(20).default([]),
   isActive: z.boolean().default(true),
 });
 
@@ -29,6 +30,7 @@ export const updateExperienceSchema = z
     priceAdult: z.number().positive().max(1_000_000).optional(),
     priceChild: z.number().positive().max(1_000_000).nullable().optional(),
     requirements: z.string().trim().max(2000).nullable().optional(),
+    images: z.array(z.string().url("Cada imagen debe ser una URL válida")).max(20).optional(),
     isActive: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {

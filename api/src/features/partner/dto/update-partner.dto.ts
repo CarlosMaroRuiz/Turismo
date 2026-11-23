@@ -24,6 +24,12 @@ export const updatePartnerSchema = z
     contactName: z.string().trim().min(2).max(150).optional(),
     contactEmail: z.string().trim().email().max(150).optional(),
     contactPhone: z.string().trim().min(7).max(30).optional(),
+    logoUrl: z
+      .string()
+      .url("El logoUrl debe ser una URL válida")
+      .max(500)
+      .nullable()
+      .optional(),
   })
   .refine((data) => Object.values(data).some((v) => v !== undefined), {
     message: "Debe enviar al menos un campo para actualizar",

@@ -1530,3 +1530,138 @@ describe("Cotizaciones", () => {
     assert.equal(response.body.code, "VALIDATION_ERROR");
   });
 });
+
+describe("Datos de demostración y campos nuevos", () => {
+  it("el login del socio trae categoryId y categoryCode", async () => {
+    const agency = await partnerSession();
+
+    assert.ok(agency.user.partner.categoryId);
+    assert.equal(agency.user.partner.categoryCode, "agency");
+  });
+
+  it("los proveedores de demostración existen y pueden iniciar sesión", async () => {
+    const hotel = await login("hotel.demo@plataforma.com", "Hotel1234!");
+    assert.equal(hotel.user.partner.categoryCode, "hotel");
+    assert.ok(hotel.user.partner.logoUrl);
+
+    const attraction = await login(
+      "atractivo.demo@plataforma.com",
+      "Atractivo1234!"
+    );
+    assert.equal(attraction.user.partner.categoryCode, "attraction");
+  });
+
+  it("el admin ve categoryName y regionName en el listado de socios", async () => {
+    const admin = await adminSession();
+
+    const list = await api("GET", "/partners?limit=1", {
+      token: admin.accessToken,
+    });
+
+    assert.equal(list.status, 200);
+    const first = list.body.data[0];
+    assert.ok(first.categoryName, "debe traer el nombre de la categoría");
+    assert.ok(first.regionName, "debe traer el nombre de la región");
+    assert.ok("logoUrl" in first);
+  });
+
+  it("el catálogo de demostración tiene habitaciones con inventario", async () => {
+    const hotel = await login("hotel.demo@plataforma.com", "Hotel1234!");
+    const catalog = await api(
+      "GET",
+      `/hotels/room-types?limit=50&partnerId=${hotel.user.partner.id}`
+    );
+
+    assert.equal(catalog.status, 200);
+    const demoRoom = catalog.body.data.find(
+      (room: { name: string }) => room.name === "Doble estándar"
+    );
+    assert.ok(demoRoom, "debe existir la habitación de demostración");
+    assert.ok(demoRoom.images.length > 0);
+    assert.equal(demoRoom.basePrice, 1500);
+  });
+
+  it("la disponibilidad del hotel demo devuelve noches y total", async () => {
+    const hotel = await login("hotel.demo@plataforma.com", "Hotel1234!");
+    const checkIn = futureDate(3);
+    const checkOut = futureDate(5);
+
+    const availability = await api(
+      "GET",
+      `/hotels/availability?checkIn=${checkIn}&checkOut=${checkOut}&adults=2&children=0&partnerId=${hotel.user.partner.id}`
+    );
+
+    assert.equal(availability.status, 200);
+    const demo = availability.body.data.find(
+      (item: { roomTypeName: string }) => item.roomTypeName === "Doble estándar"
+    );
+    assert.ok(demo, "la habitación demo debe estar disponible");
+    assert.equal(demo.nights, 2);
+    assert.equal(demo.totalPrice, 3000);
+  });
+
+  it("la experiencia demo tiene turnos disponibles", async () => {
+    const attraction = await login(
+      "atractivo.demo@plataforma.com",
+      "Atractivo1234!"
+    );
+    const date = futureDate(3);
+    const availability = await api(
+      "GET",
+      `/experiences/availability?date=${date}&people=2&partnerId=${attraction.user.partner.id}`
+    );
+
+    assert.equal(availability.status, 200);
+    const demo = availability.body.data.find(
+      (item: { experienceName: string }) => item.experienceName === "Ruta del Cacao"
+    );
+    assert.ok(demo, "la experiencia demo debe ofrecer turnos");
+    assert.equal(demo.priceAdult, 850);
+  });
+
+  it("paquetes, habitaciones y experiencias aceptan y devuelven imágenes", async () => {
+    const agency = await partnerSession();
+    const region = await firstRegion();
+    const image = "https://picsum.photos/seed/e2e-media/1200/800";
+
+    const pkg = await api("POST", "/packages", {
+      token: agency.accessToken,
+      body: { ...packageBaseBody(region.id, `Paquete Media ${RUN}`), images: [image] },
+    });
+    assert.equal(pkg.status, 201);
+    assert.deepEqual(pkg.body.data.images, [image]);
+
+    const hotel = await login("hotel.demo@plataforma.com", "Hotel1234!");
+    const room = await api("POST", "/hotels/room-types", {
+      token: hotel.accessToken,
+      body: {
+        name: `Habitación media ${RUN}`,
+        maxAdults: 2,
+        maxChildren: 0,
+        totalUnits: 2,
+        basePrice: 900,
+        images: [image],
+      },
+    });
+    assert.equal(room.status, 201);
+    assert.deepEqual(room.body.data.images, [image]);
+
+    const attraction = await login(
+      "atractivo.demo@plataforma.com",
+      "Atractivo1234!"
+    );
+    const experience = await api("POST", "/experiences", {
+      token: attraction.accessToken,
+      body: {
+        regionId: region.id,
+        name: `Experiencia media ${RUN}`,
+        description: "Experiencia creada para validar el campo de imágenes.",
+        durationMinutes: 60,
+        priceAdult: 300,
+        images: [image],
+      },
+    });
+    assert.equal(experience.status, 201);
+    assert.deepEqual(experience.body.data.images, [image]);
+  });
+});

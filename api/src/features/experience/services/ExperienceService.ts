@@ -175,6 +175,7 @@ export class ExperienceService {
       priceAdult: Number(experience.priceAdult),
       priceChild:
         experience.priceChild === null ? null : Number(experience.priceChild),
+      images: experience.images ?? [],
       isActive: experience.isActive,
       createdAt: experience.createdAt,
     };
@@ -333,6 +334,7 @@ export class ExperienceService {
         priceAdult: dto.priceAdult,
         priceChild: dto.priceChild ?? null,
         requirements: dto.requirements ?? null,
+        images: dto.images,
         isActive: dto.isActive,
       })
     );
@@ -372,6 +374,7 @@ export class ExperienceService {
     if (dto.priceChild !== undefined) experience.priceChild = dto.priceChild;
     if (dto.requirements !== undefined)
       experience.requirements = dto.requirements;
+    if (dto.images !== undefined) experience.images = dto.images;
     if (dto.isActive !== undefined) experience.isActive = dto.isActive;
 
     await this.experienceRepo.save(experience);

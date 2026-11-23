@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { DataSource } from "typeorm";
 import { Seed } from "../utils/seed.decorator.js";
 import type { Seeder } from "../types/index.js";
+import { METACONFIG } from "../../../metaconfig/index.js";
 
 // Entidades (ajusta el sufijo .entity.js si alguna de tus entidades lo usa)
 import { State } from "../../entities/State.entity.js";
@@ -24,6 +25,11 @@ import {
 @Seed({ name: "test-agencies", order: 6 })
 export class TestAgenciesSeeder implements Seeder {
   async run(dataSource: DataSource): Promise<void> {
+    if (METACONFIG.server.isProduction) {
+      console.warn("[test-agencies] Omitido en producción (datos de prueba).");
+      return;
+    }
+
     // 1. Obtener dependencias previas (cargadas en orders 1, 3 y 4)
     const stateRepo = dataSource.getRepository(State);
     const categoryRepo = dataSource.getRepository(PartnerCategory);
@@ -173,6 +179,9 @@ export class TestAgenciesSeeder implements Seeder {
           cancellationPolicy:
             "Cancelación gratuita hasta 7 días antes de la salida. Entre 6 y 3 días aplica penalización del 30%. Menos de 48 horas no reembolsable.",
           taxesIncluded: true,
+          images: [
+            "https://picsum.photos/seed/escapada-caribena/1200/800",
+          ],
           status: PackageStatus.PUBLISHED,
         });
         const savedPkg = await packageRepo.save(newPkg);

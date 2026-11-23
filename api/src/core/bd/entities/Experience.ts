@@ -76,6 +76,10 @@ export class Experience {
   @Column({ type: "text", nullable: true })
   requirements: string | null;
 
+  // Galería: URLs de imágenes de la experiencia.
+  @Column({ type: "json" })
+  images: string[];
+
   @Column({ name: "is_active", type: "boolean", default: true })
   isActive: boolean;
 
