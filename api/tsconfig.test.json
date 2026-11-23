@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist-test",
+    "declaration": false,
+    "declarationMap": false,
+    "noEmitOnError": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-test",
+    "src/test/e2e/helpers",
+    "src/test/e2e/auth.e2e.ts",
+    "src/test/e2e/partner.e2e.ts",
+    "src/test/e2e/region.e2e.ts",
+    "src/test/e2e/partner-category.e2e.ts"
+  ]
+}

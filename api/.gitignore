@@ -1,0 +1,18 @@
+# Dependencias y artefactos de build
+node_modules/
+dist/
+dist-test/
+
+# Entorno: nunca se versiona (contiene credenciales)
+.env
+.env.*
+!.env.example
+
+# Caché y logs
+.npm-cache/
+*.log
+npm-debug.log*
+
+# Sistema
+Thumbs.db
+.DS_Store

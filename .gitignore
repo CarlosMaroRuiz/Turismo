@@ -1,0 +1,59 @@
+# ============================================================
+# Red de seguridad a nivel raíz del monorepo.
+# Cada subcarpeta (api/, frontend/) tiene además su propio .gitignore.
+# ============================================================
+
+# --- Dependencias (NUNCA se suben) ---
+node_modules/
+**/node_modules/
+.npm-cache/
+.pnpm-store/
+
+# --- Variables de entorno (NUNCA se suben: contienen credenciales) ---
+.env
+.env.*
+**/.env
+**/.env.*
+*.env
+!.env.example
+!**/.env.example
+!*.env.example
+
+# --- Artefactos de build ---
+dist/
+dist-ssr/
+dist-test/
+build/
+out/
+*.tsbuildinfo
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Cachés ---
+.cache/
+.vite/
+.eslintcache
+coverage/
+
+# --- Editores / sistema ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.sw?
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# --- Secretos y llaves ---
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json

@@ -1,0 +1,20 @@
+# Normaliza los finales de línea: se guarda LF en el repositorio y se
+# convierten automáticamente en cada sistema operativo al hacer checkout.
+* text=auto eol=lf
+
+# Binarios (no se deben transformar)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# Los .bat/.cmd requieren CRLF en Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Los package-lock.json siempre con LF
+package-lock.json text eol=lf
