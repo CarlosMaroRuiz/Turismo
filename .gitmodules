@@ -1,0 +1,3 @@
+[submodule "turismo-telegram-bot"]
+	path = turismo-telegram-bot
+	url = https://github.com/pabloin1/turismo-telegram-bot.git
