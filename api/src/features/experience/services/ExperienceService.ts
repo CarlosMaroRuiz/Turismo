@@ -1,4 +1,5 @@
 import { AppDataSource } from "../../../core/bd/index.js";
+import { availabilityDates } from "../../../core/http/availability-dates.js";
 import { Partner, PartnerStatus } from "../../../core/bd/entities/Partner.js";
 import { PartnerCategory } from "../../../core/bd/entities/PartnerCategory.js";
 import { Region, RegionStatus } from "../../../core/bd/entities/Region.entity.js";
@@ -461,16 +462,18 @@ export class ExperienceService {
   /** Disponibilidad de un día: turnos abiertos con cupo suficiente. */
   public async searchAvailability(
     query: ExperienceAvailabilityQuery
-  ): Promise<{ items: ExperienceAvailabilityItem[]; total: number }> {
+  ): Promise<{ items: ExperienceAvailabilityItem[] | { date: string }[]; total: number }> {
     const categoryId = await this.attractionCategoryId();
     const date = query.date ?? todayIso();
+    const dates = query.flexDays > 0 ? availabilityDates(date, query.flexDays) : [date];
+    if (dates.length === 0) return { items: [], total: 0 };
 
     const qb = this.slotRepo
       .createQueryBuilder("slot")
       .innerJoinAndSelect("slot.experience", "experience")
       .innerJoinAndSelect("experience.partner", "partner")
       .innerJoinAndSelect("experience.region", "region")
-      .where("slot.date = :date", { date })
+      .where("slot.date IN (:...dates)", { dates })
       .andWhere("slot.status = :slotStatus", { slotStatus: SlotStatus.OPEN })
       .andWhere("slot.capacity - slot.booked >= :people", {
         people: query.people,
@@ -483,7 +486,8 @@ export class ExperienceService {
       .andWhere("region.status = :regionStatus", {
         regionStatus: RegionStatus.ACTIVE,
       })
-      .orderBy("slot.startTime", "ASC");
+      .orderBy("slot.startTime", "ASC")
+      .addOrderBy("slot.id", "ASC");
 
     if (query.regionId) {
       qb.andWhere("experience.regionId = :regionId", {
@@ -498,6 +502,15 @@ export class ExperienceService {
     }
 
     const { skip, take } = toSkipTake(query);
+    if (query.flexDays > 0) {
+      const days = await qb.select("DATE_FORMAT(slot.date, '%Y-%m-%d')", "date")
+        .groupBy("slot.date")
+        .orderBy("ABS(DATEDIFF(slot.date, :requestedDate))", "ASC")
+        .addOrderBy("slot.date", "ASC")
+        .setParameter("requestedDate", date)
+        .getRawMany<{ date: string }>();
+      return { items: days.slice(skip, skip + take), total: days.length };
+    }
     const [rows, total] = await qb.skip(skip).take(take).getManyAndCount();
 
     return {

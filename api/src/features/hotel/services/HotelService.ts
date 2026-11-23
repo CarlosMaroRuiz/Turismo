@@ -1,5 +1,6 @@
 import { In } from "typeorm";
 import { AppDataSource } from "../../../core/bd/index.js";
+import { availabilityDates, shiftDate } from "../../../core/http/availability-dates.js";
 import { Partner, PartnerStatus } from "../../../core/bd/entities/Partner.js";
 import { PartnerCategory } from "../../../core/bd/entities/PartnerCategory.js";
 import { Region, RegionStatus } from "../../../core/bd/entities/Region.entity.js";
@@ -390,7 +391,7 @@ export class HotelService {
    */
   public async searchAvailability(
     query: AvailabilityQuery
-  ): Promise<{ items: AvailabilityItem[]; total: number }> {
+  ): Promise<{ items: AvailabilityItem[] | { date: string }[]; total: number }> {
     const nights = nightsBetween(query.checkIn, query.checkOut);
 
     if (nights < 1) {
@@ -440,7 +441,15 @@ export class HotelService {
       return { items: [], total: 0 };
     }
 
-    const dates = eachNight(query.checkIn, query.checkOut);
+    const starts = query.flexDays > 0
+      ? availabilityDates(query.checkIn, query.flexDays)
+      : [query.checkIn];
+    if (starts.length === 0) return { items: [], total: 0 };
+    const stays = starts.map((checkIn) => {
+      const checkOut = shiftDate(checkIn, nights);
+      return { checkIn, checkOut, dates: eachNight(checkIn, checkOut) };
+    });
+    const dates = [...new Set(stays.flatMap((stay) => stay.dates))];
     const inventoryRows = await this.inventoryRepo.find({
       where: { roomTypeId: In(candidates.map((rt) => rt.id)), date: In(dates) },
     });
@@ -450,51 +459,61 @@ export class HotelService {
     );
 
     const available: AvailabilityItem[] = [];
+    const availableDates: { date: string }[] = [];
 
-    for (const roomType of candidates) {
-      let totalPrice = 0;
-      const nightly: AvailabilityItem["nightly"] = [];
-      let isAvailable = true;
+    for (const stay of stays) {
+      for (const roomType of candidates) {
+        let totalPrice = 0;
+        const nightly: AvailabilityItem["nightly"] = [];
+        let isAvailable = true;
 
-      for (const date of dates) {
-        const row = byRoomDate.get(`${roomType.id}|${date}`);
-        const units = row?.units ?? roomType.totalUnits;
-        const isClosed = row?.isClosed ?? false;
+        for (const date of stay.dates) {
+          const row = byRoomDate.get(`${roomType.id}|${date}`);
+          const units = row?.units ?? roomType.totalUnits;
+          const isClosed = row?.isClosed ?? false;
 
-        if (isClosed || units < 1) {
-          isAvailable = false;
-          break;
+          if (isClosed || units < 1) {
+            isAvailable = false;
+            break;
+          }
+
+          const price = Number(row?.price ?? roomType.basePrice);
+          totalPrice += price;
+          nightly.push({ date, price });
         }
 
-        const price = Number(row?.price ?? roomType.basePrice);
-        totalPrice += price;
-        nightly.push({ date, price });
-      }
+        if (!isAvailable) {
+          continue;
+        }
 
-      if (!isAvailable) {
-        continue;
+        if (query.flexDays > 0) {
+          availableDates.push({ date: stay.checkIn });
+          break;
+        }
+        available.push({
+          roomTypeId: roomType.id,
+          roomTypeName: roomType.name,
+          partnerId: roomType.partnerId,
+          partnerName: roomType.partner.commercialName,
+          regionId: roomType.partner.regionId,
+          regionName: roomType.partner.region?.name ?? "",
+          maxAdults: roomType.maxAdults,
+          maxChildren: roomType.maxChildren,
+          amenities: roomType.amenities ?? [],
+          checkIn: stay.checkIn,
+          checkOut: stay.checkOut,
+          nights,
+          nightly,
+          totalPrice: Math.round(totalPrice * 100) / 100,
+          currency: "MXN",
+        });
       }
-
-      available.push({
-        roomTypeId: roomType.id,
-        roomTypeName: roomType.name,
-        partnerId: roomType.partnerId,
-        partnerName: roomType.partner.commercialName,
-        regionId: roomType.partner.regionId,
-        regionName: roomType.partner.region?.name ?? "",
-        maxAdults: roomType.maxAdults,
-        maxChildren: roomType.maxChildren,
-        amenities: roomType.amenities ?? [],
-        checkIn: query.checkIn,
-        checkOut: query.checkOut,
-        nights,
-        nightly,
-        totalPrice: Math.round(totalPrice * 100) / 100,
-        currency: "MXN",
-      });
     }
 
     const { skip } = toSkipTake(query);
+    if (query.flexDays > 0) {
+      return { items: availableDates.slice(skip, skip + query.limit), total: availableDates.length };
+    }
     const paged = available.slice(skip, skip + query.limit);
 
     return { items: paged, total: available.length };

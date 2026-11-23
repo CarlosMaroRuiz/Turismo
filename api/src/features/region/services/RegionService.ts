@@ -80,11 +80,17 @@ export class RegionService {
     }
 
     if (filters.search) {
+      const name = filters.search.toLowerCase();
       qb.andWhere(
         "(LOWER(region.name) LIKE :search OR LOWER(region.slug) LIKE :search " +
           "OR JSON_SEARCH(LOWER(CAST(region.aliases AS CHAR)), 'one', :search) IS NOT NULL)",
-        { search: `%${filters.search.toLowerCase()}%` }
+        { search: `%${name}%` }
       );
+      qb.addSelect(
+        "CASE WHEN LOWER(region.name) = :name OR LOWER(region.slug) = :name " +
+          "OR JSON_SEARCH(LOWER(CAST(region.aliases AS CHAR)), 'one', :name) IS NOT NULL THEN 0 ELSE 1 END",
+        "search_rank"
+      ).setParameter("name", name).orderBy("search_rank", "ASC").addOrderBy("region.name", "ASC");
     }
 
     const { skip, take } = toSkipTake(pagination);

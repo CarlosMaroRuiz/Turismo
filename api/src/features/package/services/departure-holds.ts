@@ -1,6 +1,9 @@
 import type { EntityManager } from "typeorm";
 import { Booking } from "../../../core/bd/entities/Booking.js";
 
+export const activeDepartureHold =
+  "(booking.status = 'capturing' OR (booking.status = 'pending_payment' AND booking.expiresAt > CURRENT_TIMESTAMP(6)))";
+
 export async function departureHolds(
   manager: EntityManager,
   departureIds: string[]
@@ -11,9 +14,7 @@ export async function departureHolds(
     .select("booking.departureId", "departureId")
     .addSelect("SUM(booking.seats)", "seats")
     .where("booking.departureId IN (:...departureIds)", { departureIds })
-    .andWhere(
-      "(booking.status = 'capturing' OR (booking.status = 'pending_payment' AND booking.expiresAt > CURRENT_TIMESTAMP(6)))"
-    )
+    .andWhere(activeDepartureHold)
     .groupBy("booking.departureId")
     .getRawMany<{ departureId: string; seats: string }>();
 

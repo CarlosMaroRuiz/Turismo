@@ -1,5 +1,8 @@
 import { AppDataSource } from "../../../core/bd/index.js";
-import { departureHolds } from "./departure-holds.js";
+import { activeDepartureHold, departureHolds } from "./departure-holds.js";
+import { Booking } from "../../../core/bd/entities/Booking.js";
+import { availabilityDates } from "../../../core/http/availability-dates.js";
+import type { PackageAvailabilityQuery } from "../dto/availability.dto.js";
 import { Package, PackageStatus } from "../../../core/bd/entities/Package.js";
 import {
   PackageItem,
@@ -314,6 +317,47 @@ export class PackageService {
       ),
       total,
     };
+  }
+
+  public async searchAvailability(query: PackageAvailabilityQuery) {
+    const dates = availabilityDates(query.date, query.flexDays);
+    if (dates.length === 0) return { items: [], total: 0 };
+
+    const qb = this.departureRepo.createQueryBuilder("departure")
+      .innerJoin("departure.package", "pkg")
+      .innerJoin("pkg.partner", "partner")
+      .innerJoin("pkg.destinationRegion", "region")
+      .where("departure.departureDate IN (:...dates)", { dates })
+      .andWhere("departure.status = :open", { open: DepartureStatus.OPEN })
+      .andWhere("pkg.status = :published", { published: PackageStatus.PUBLISHED })
+      .andWhere("pkg.destinationRegionId = :regionId", { regionId: query.regionId })
+      .andWhere("partner.status = :partner", { partner: PartnerStatus.ACTIVE })
+      .andWhere("region.status = :region", { region: RegionStatus.ACTIVE })
+      .andWhere("pkg.minTravelers <= :people AND (pkg.maxTravelers IS NULL OR pkg.maxTravelers >= :people)", { people: query.people });
+    const held = qb.subQuery().select("COALESCE(SUM(booking.seats), 0)").from(Booking, "booking")
+      .where("booking.departureId = departure.id").andWhere(activeDepartureHold).getQuery();
+    qb.andWhere(`departure.totalSeats - departure.soldSeats - ${held} >= :people`);
+
+    const { skip, take } = toSkipTake(query);
+    if (query.flexDays > 0) {
+      const days = await qb.select("DATE_FORMAT(departure.departureDate, '%Y-%m-%d')", "date")
+        .groupBy("departure.departureDate")
+        .orderBy("ABS(DATEDIFF(departure.departureDate, :requestedDate))", "ASC")
+        .addOrderBy("departure.departureDate", "ASC")
+        .setParameter("requestedDate", query.date)
+        .getRawMany<{ date: string }>();
+      return { items: days.slice(skip, skip + take), total: days.length };
+    }
+    const [items, total] = await Promise.all([
+      qb.clone().select("departure.id", "departureId")
+        .addSelect("pkg.name", "packageName")
+        .addSelect("DATE_FORMAT(departure.departureDate, '%Y-%m-%d')", "date")
+        .orderBy("departure.id", "ASC")
+        .offset(skip).limit(take)
+        .getRawMany<{ departureId: string; packageName: string; date: string }>(),
+      qb.getCount(),
+    ]);
+    return { items, total };
   }
 
   /** Paquetes del socio autenticado (cualquier estado); el admin ve todos. */

@@ -58,6 +58,7 @@ export const experienceListQuerySchema = paginationSchema.extend({
 
 export const experienceAvailabilityQuerySchema = paginationSchema.extend({
   date: isoDateSchema.optional(),
+  flexDays: z.coerce.number().int().min(0).max(7).default(0),
   regionId: z.string().uuid().optional(),
   partnerId: z.string().uuid().optional(),
   people: z.coerce.number().int().min(1).max(50).default(1),

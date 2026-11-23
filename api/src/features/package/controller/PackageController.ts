@@ -13,6 +13,7 @@ import {
   updatePackageSchema,
 } from "../dto/index.js";
 import { PackageService } from "../services/PackageService.js";
+import { packageAvailabilityQuerySchema } from "../dto/availability.dto.js";
 
 export class PackageController {
   private readonly packageService = new PackageService();
@@ -66,6 +67,12 @@ export class PackageController {
       toPaginationMeta(total, pagination.page, pagination.limit),
       "Paquetes del socio obtenidos correctamente"
     );
+  };
+
+  public availability = async (req: Request, res: Response): Promise<void> => {
+    const query = packageAvailabilityQuerySchema.parse(req.query);
+    const { items, total } = await this.packageService.searchAvailability(query);
+    ApiResponse.paginated(res, items, toPaginationMeta(total, query.page, query.limit));
   };
 
   public getById = async (req: Request, res: Response): Promise<void> => {
