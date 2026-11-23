@@ -31,10 +31,8 @@ class BotCheckoutTest(unittest.IsolatedAsyncioTestCase):
                 data = {"accessToken": "test-token", "expiresIn": "15m"}
             elif path.endswith("/regions"):
                 data = [{"id": "region", "name": "Palenque"}]
-            elif path.endswith("/packages"):
-                data = [{"id": "pkg", "name": "Ruta", "minTravelers": 1, "maxTravelers": 4}]
-            elif path.endswith("/packages/pkg"):
-                data = {"departures": [{"id": "departure", "departureDate": date, "availableSeats": 4}]}
+            elif path.endswith("/packages/availability"):
+                data = [{"departureId": "departure", "packageName": "Ruta", "date": date}]
             elif path.endswith("/quotes"):
                 self.assertEqual(request.headers["Authorization"], "Bearer test-token")
                 self.assertEqual(json.loads(request.content)["items"][0]["departureId"], "departure")
@@ -101,6 +99,71 @@ class BotCheckoutTest(unittest.IsolatedAsyncioTestCase):
 
 
 class SearchTest(unittest.IsolatedAsyncioTestCase):
+    async def test_alternative_rechecks_hotel_and_preserves_length_and_group(self):
+        start = today() + timedelta(days=7)
+        end = start + timedelta(days=2)
+        alternate = start + timedelta(days=1)
+        calls = []
+
+        def catalog(request):
+            if request.url.path.endswith("/regions"):
+                data = [{"id": "region", "name": "Benito Juárez", "aliases": ["Cancún"]}]
+            else:
+                params = request.url.params
+                calls.append(dict(params))
+                if params.get("flexDays") == "7":
+                    data = [{"date": str(alternate)}]
+                elif params["checkIn"] == str(alternate):
+                    data = [{"roomTypeId": "suite", "roomTypeName": "Suite Familiar", "partnerName": "Hotel",
+                             "checkIn": str(alternate), "checkOut": str(alternate + timedelta(days=2))}]
+                else:
+                    data = []
+            return httpx.Response(200, json={"ok": True, "data": data})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(catalog)) as http:
+            graph = build_graph(Turismo(http, "https://turismo.test/api/v1", "client", "secret"), None)
+            initial = await graph.ainvoke({
+                "chat_id": 1, "text": f"Cancún | {start} | {end} | 4 | 1", "action": "",
+                "session": {"search": {"kind": "hotel"}},
+            })
+            choice = initial["response"]["reply_markup"]["inline_keyboard"][0][0]["callback_data"]
+            chosen = await graph.ainvoke({
+                "chat_id": 1, "text": "", "action": choice, "session": initial["session"],
+            })
+            self.assertEqual(chosen["session"]["options"][0]["item"]["roomTypeId"], "suite")
+            self.assertEqual(calls[-1]["checkOut"], str(alternate + timedelta(days=2)))
+            self.assertEqual((calls[-1]["adults"], calls[-1]["children"]), ("4", "1"))
+            self.assertNotIn("flexDays", calls[-1])
+            stale = await graph.ainvoke({
+                "chat_id": 1, "text": "", "action": choice, "session": chosen["session"],
+            })
+            self.assertIn("vencieron", stale["response"]["text"])
+            self.assertEqual(len(calls), 3)
+
+    async def test_ambiguous_destination_presents_regions_before_querying_availability(self):
+        start = today() + timedelta(days=7)
+        def catalog(request):
+            if request.url.path.endswith("/regions"):
+                data = [{"id": "north", "name": "Riviera Norte"}, {"id": "south", "name": "Riviera Sur"}]
+            else:
+                self.assertEqual(request.url.params["regionId"], "south")
+                data = [{"departureId": "departure", "packageName": "Tour", "date": str(start)}]
+            return httpx.Response(200, json={"ok": True, "data": data})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(catalog)) as http:
+            graph = build_graph(Turismo(http, "https://turismo.test/api/v1", "client", "secret"), None)
+            initial = await graph.ainvoke({
+                "chat_id": 1, "text": f"Riviera | {start} | 2 | 0", "action": "",
+                "session": {"search": {"kind": "paquete"}},
+            })
+            choices = initial["response"]["reply_markup"]["inline_keyboard"]
+            self.assertEqual([row[0]["text"] for row in choices], ["Riviera Norte", "Riviera Sur"])
+            result = await graph.ainvoke({
+                "chat_id": 1, "text": "", "action": choices[1][0]["callback_data"], "session": initial["session"],
+            })
+            self.assertEqual(result["session"]["search"]["destination"], "Riviera Sur")
+            self.assertEqual(result["session"]["options"][0]["label"], "Tour")
+
     async def test_partial_search_asks_only_for_adults_and_accepts_a_number(self):
         departure = today() + timedelta(days=7)
 
@@ -116,10 +179,8 @@ class SearchTest(unittest.IsolatedAsyncioTestCase):
                 case "/api/v1/regions":
                     self.assertEqual(request.url.params["search"], "Benito Juárez")
                     data = [{"id": "region", "name": "Benito Juárez"}]
-                case "/api/v1/packages":
-                    data = [{"id": "pkg", "name": "Escapada Caribeña", "minTravelers": 1, "maxTravelers": 4}]
-                case "/api/v1/packages/pkg":
-                    data = {"departures": [{"id": "salida", "departureDate": str(departure), "availableSeats": 4}]}
+                case "/api/v1/packages/availability":
+                    data = [{"departureId": "salida", "packageName": "Escapada Caribeña", "date": str(departure)}]
                 case _:
                     self.fail(f"Ruta inesperada: {request.url.path}")
             return httpx.Response(200, json={"ok": True, "data": data})
