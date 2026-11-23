@@ -1,4 +1,4 @@
-import json
+﻿import json
 import sqlite3
 import time
 
@@ -24,6 +24,34 @@ class Store:
         with self.db:
             self.db.execute("INSERT OR IGNORE INTO updates (id, payload, due) VALUES (?, ?, ?)",
                             (update["update_id"], json.dumps(update), time.time()))
+
+    def descartar_antiguas(self, segundos: int = 300) -> int:
+        """Marca como hechas las actualizaciones viejas.
+
+        Al reiniciar, Telegram reintenta lo que quedo pendiente. Sin esto, el
+        bot responde de golpe mensajes de hace horas.
+        """
+        with self.db:
+            cursor = self.db.execute(
+                "UPDATE updates SET done = 1, payload = '{}', response = NULL WHERE done = 0 AND due < ?",
+                (time.time() - segundos,),
+            )
+            return cursor.rowcount
+
+    def pendientes_del_chat(self, chat_id: int, despues_de: int) -> list:
+        """Mensajes de texto del mismo chat que llegaron despues de uno dado."""
+        filas = self.db.execute(
+            "SELECT id, payload FROM updates WHERE done = 0 AND id > ? ORDER BY id",
+            (despues_de,),
+        ).fetchall()
+
+        resultado = []
+        for fila in filas:
+            datos = json.loads(fila["payload"])
+            mensaje = datos.get("message") or {}
+            if mensaje.get("chat", {}).get("id") == chat_id and mensaje.get("text"):
+                resultado.append(fila)
+        return resultado
 
     def next_update(self):
         return self.db.execute(

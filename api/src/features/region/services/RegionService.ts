@@ -83,11 +83,13 @@ export class RegionService {
       const name = filters.search.toLowerCase();
       qb.andWhere(
         "(LOWER(region.name) LIKE :search OR LOWER(region.slug) LIKE :search " +
+          "OR LOWER(state.name) LIKE :search OR LOWER(state.slug) LIKE :search " +
           "OR JSON_SEARCH(LOWER(CAST(region.aliases AS CHAR)), 'one', :search) IS NOT NULL)",
         { search: `%${name}%` }
       );
       qb.addSelect(
         "CASE WHEN LOWER(region.name) = :name OR LOWER(region.slug) = :name " +
+          "OR LOWER(state.name) = :name " +
           "OR JSON_SEARCH(LOWER(CAST(region.aliases AS CHAR)), 'one', :name) IS NOT NULL THEN 0 ELSE 1 END",
         "search_rank"
       ).setParameter("name", name).orderBy("search_rank", "ASC").addOrderBy("region.name", "ASC");

@@ -187,6 +187,16 @@ export class PartnerController {
     ApiResponse.ok(res, null, "Invitación reenviada correctamente");
   };
 
+  public resendMember = async (req: Request, res: Response): Promise<void> => {
+    const id = this.getParamId(req, "id");
+    const userId = String(req.params.userId);
+    const actor = this.getAuthenticatedUser(req);
+
+    await this.partnerService.assertCanManageMembers(id, actor.userId, actor.role);
+    await this.partnerService.resendMemberInvitation(id, userId);
+    ApiResponse.ok(res, null, "Invitación reenviada correctamente");
+  };
+
   public listMembers = async (req: Request, res: Response): Promise<void> => {
     const id = this.getParamId(req, "id");
     this.ensurePartnerAccess(req, id);

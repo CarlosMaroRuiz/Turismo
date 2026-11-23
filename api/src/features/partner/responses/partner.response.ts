@@ -37,6 +37,8 @@ export interface PartnerMemberResponse {
   email: string;
   phone: string | null;
   userStatus: string;
+  /** true si la API le exige cambiar la contrasena al entrar. */
+  mustChangePassword: boolean;
   role: string;
   isActive: boolean;
   createdAt: Date;

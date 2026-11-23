@@ -1,4 +1,4 @@
-import type { ButtonSize, ButtonVariant } from './type'
+import type { ButtonShape, ButtonSize, ButtonVariant } from './type'
 
 /**
  * Clases de Tailwind del botón. Ninguna clase de color se escribe aquí
@@ -8,13 +8,22 @@ import type { ButtonSize, ButtonVariant } from './type'
 /** Clases compartidas por toda variante y tamaño. */
 export const buttonBase = [
   'inline-flex items-center justify-center gap-2',
-  'rounded-lg font-semibold',
+  'font-semibold',
   'transition-colors duration-150',
   'cursor-pointer select-none',
   // Anillo de foco visible solo al navegar con teclado
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento focus-visible:ring-offset-2 focus-visible:ring-offset-fondo-claro',
   'disabled:pointer-events-none disabled:opacity-50',
 ].join(' ')
+
+/**
+ * La forma vive fuera de `buttonBase` para que exista una sola clase de
+ * redondeo en el elemento y no dependa del orden del CSS generado.
+ */
+export const buttonShapes: Record<ButtonShape, string> = {
+  rounded: 'rounded-lg',
+  pill: 'rounded-full',
+}
 
 /**
  * El `Record` hace que el mapa sea exhaustivo: si agregas una variante

@@ -1,20 +1,52 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 export type BookingStatus = "pending_payment" | "capturing" | "confirmed" | "expired" | "payment_failed";
+export type BookingItemType = "package_departure" | "room_stay" | "experience_slot";
 
 @Entity("bookings")
 @Index("uq_bookings_quote", ["quoteId"], { unique: true })
 @Index("uq_bookings_paypal_order", ["paypalOrderId"], { unique: true })
+@Index("uq_bookings_reference", ["reference"], { unique: true })
 @Index("idx_bookings_inventory", ["departureId", "status", "expiresAt"])
 export class Booking {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
+  /** Clave maestra que se comparte con el viajero y el proveedor. */
+  @Column({ type: "varchar", length: 12 })
+  reference: string;
+
   @Column({ name: "quote_id", type: "varchar", length: 36 })
   quoteId: string;
 
-  @Column({ name: "departure_id", type: "varchar", length: 36 })
-  departureId: string;
+  /**
+   * Tipo del ítem reservado: package_departure | room_stay | experience_slot.
+   * Se usa para saber en qué tabla buscar el ítem y qué incrementar al confirmar.
+   */
+  @Column({ name: "item_type", type: "varchar", length: 30, default: "package_departure" })
+  itemType: BookingItemType;
+
+  /**
+   * ID del recurso físico reservado (departure_id, room_type_id o slot_id).
+   * Para paquetes coincide con departure_id; en hoteles y experiencias usa este campo.
+   */
+  @Column({ name: "item_id", type: "varchar", length: 36 })
+  itemId: string;
+
+  /**
+   * Columna legacy: solo tiene valor en reservas de paquetes para mantener
+   * compatibilidad con el índice de inventario y la FK existente.
+   * En hoteles y experiencias es NULL.
+   */
+  @Column({ name: "departure_id", type: "varchar", length: 36, nullable: true })
+  departureId: string | null;
+
+  /**
+   * JSON con detalles del ítem (checkIn/checkOut para hoteles, fecha/hora para
+   * experiencias, fecha de salida para paquetes). Se usa en el comprobante.
+   */
+  @Column({ name: "item_detail", type: "json", nullable: true })
+  itemDetail: Record<string, unknown> | null;
 
   @Column({ name: "client_id", type: "varchar", length: 60 })
   clientId: string;

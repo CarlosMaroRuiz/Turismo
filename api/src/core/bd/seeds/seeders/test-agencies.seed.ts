@@ -180,7 +180,7 @@ export class TestAgenciesSeeder implements Seeder {
             "Cancelación gratuita hasta 7 días antes de la salida. Entre 6 y 3 días aplica penalización del 30%. Menos de 48 horas no reembolsable.",
           taxesIncluded: true,
           images: [
-            "https://picsum.photos/seed/escapada-caribena/1200/800",
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSi0CbatDeq1hWFHptSwIILuBajFtUgv7MOT5V2pxt1edQUbl-srwqoleI8&s=10",
           ],
           status: PackageStatus.PUBLISHED,
         });

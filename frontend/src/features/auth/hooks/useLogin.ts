@@ -19,13 +19,13 @@ interface UseLoginResult {
 }
 
 /**
- * Login del panel de administracion.
+ * Login del panel y del portal.
  *
- * El endpoint es el mismo para los dos perfiles, asi que despues de entrar
- * hay que verificar el rol: si un socio intenta por `/login/admin`, se
+ * El endpoint es el mismo para los dos perfiles, asi que despues de entrar hay
+ * que verificar el rol: si una cuenta entra por el acceso equivocado se
  * rechaza y se limpia la sesion que la API acaba de emitir.
  */
-export function useLogin(): UseLoginResult {
+export function useLogin(esperado: 'super_user' | 'partner' = 'super_user'): UseLoginResult {
   const navigate = useNavigate()
   const { execute, isLoading, error, reset } = useAction(loginAndStore)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -36,15 +36,24 @@ export function useLogin(): UseLoginResult {
 
       const user = await execute(credenciales)
 
-      if (user.role !== 'super_user') {
+      if (user.role !== esperado) {
         sessionStore.clear()
-        setAviso('Esa cuenta no es de administrador. Usa el acceso de socios.')
+        setAviso(
+          esperado === 'super_user'
+            ? 'Esa cuenta no es de administrador. Usa el acceso de socios.'
+            : 'Esa cuenta no es de socio. Usa el acceso de administrador.',
+        )
         return
       }
 
-      navigate(PATHS.admin, { replace: true })
+      if (user.mustChangePassword) {
+        navigate(PATHS.changePassword, { replace: true })
+        return
+      }
+
+      navigate(esperado === 'super_user' ? PATHS.admin : PATHS.panel, { replace: true })
     },
-    [execute, navigate],
+    [esperado, execute, navigate],
   )
 
   return { entrar, isLoading, error, aviso, reset }

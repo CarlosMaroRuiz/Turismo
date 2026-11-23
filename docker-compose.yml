@@ -1,0 +1,107 @@
+name: turismo
+
+# Levanta todo con:  docker compose up -d --build
+# La app queda en:    http://localhost:8080
+# Puerto publico:     docker compose --profile public up -d tunnel
+#
+# Los secretos NO viven aqui: api/.env y turismo-telegram-bot/turismo_bot/.env.
+# En la raiz, .env solo aporta DB_PASSWORD, DB_NAME y PUBLIC_URL.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: turismo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el .env de la raiz}
+      MYSQL_DATABASE: ${DB_NAME:-turista}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: turismo-api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file:
+      - ./api/.env
+    environment:
+      # La base vive en el contenedor, no en localhost
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el .env de la raiz}
+      DB_NAME: ${DB_NAME:-turista}
+      PORT: 3000
+      # Un solo dominio publico para el frontend, la API y los webhooks
+      APP_URL: ${PUBLIC_URL:-http://localhost:8080}
+      PAYPAL_PUBLIC_API_URL: ${PUBLIC_URL:-http://localhost:8080}
+      CORS_ORIGINS: ${PUBLIC_URL:-http://localhost:8080},http://localhost:8080
+      AUTO_MIGRATE: "true"
+      AUTO_SEED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/openapi.json >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Ruta relativa: el navegador pega al mismo dominio y nginx enruta a la API
+        VITE_API_URL: /api/v1
+    container_name: turismo-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+  bot:
+    build:
+      context: ./turismo-telegram-bot
+      dockerfile: Dockerfile
+    container_name: turismo-bot
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - ./turismo-telegram-bot/turismo_bot/.env
+    environment:
+      TURISMO_API_URL: http://api:3000/api/v1
+      BOT_DATABASE: /app/data/bot.sqlite3
+    ports:
+      - "8000:8000"
+    volumes:
+      - bot_data:/app/data
+
+  # Tunel con URL https aleatoria para que PayPal, Telegram y Gmail
+  # alcancen el sistema desde internet. Se arranca aparte:
+  #   docker compose --profile public up -d tunnel
+  # La URL aparece en: docker compose logs tunnel
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: turismo-tunnel
+    restart: unless-stopped
+    profiles: ["public"]
+    command: tunnel --no-autoupdate --url http://frontend:80
+    depends_on:
+      - frontend
+
+volumes:
+  mysql_data:
+  bot_data:

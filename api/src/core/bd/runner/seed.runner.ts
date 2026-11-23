@@ -5,6 +5,7 @@ import { SEEDER_REGISTRY } from "../seeds/utils/seed.decorator.js";
 import "../seeds/seeders/api-clients.seed.js";
 import "../seeds/seeders/demo-providers.seed.js";
 import "../seeds/seeders/partner-categories.seed.js";
+import "../seeds/seeders/playa-yucatan.seed.js";
 import "../seeds/seeders/roles.seed.js";
 import "../seeds/seeders/states.seed.js";
 import "../seeds/seeders/test-agencies.seed.js";

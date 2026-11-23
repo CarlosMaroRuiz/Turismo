@@ -19,15 +19,6 @@ function optionalText(value: string): { value?: string } {
   return trimmed === '' ? {} : { value: trimmed }
 }
 
-function optionalNumber(value: string): { value?: number } {
-  const trimmed = value.trim()
-  if (trimmed === '') {
-    return {}
-  }
-  const parsed = Number(trimmed)
-  return Number.isFinite(parsed) ? { value: parsed } : {}
-}
-
 /**
  * Alta de socio desde el panel.
  *
@@ -55,7 +46,6 @@ export default function PartnerCreatePage() {
 
   const enviar = (values: PartnerFormValues): void => {
     const description = optionalText(values.description)
-    const lng = optionalNumber(values.lng)
     const ownerPhone = optionalText(values.ownerPhone)
 
     const payload: CreatePartnerPayload = {
@@ -71,7 +61,6 @@ export default function PartnerCreatePage() {
       ownerEmail: values.ownerEmail.trim(),
       invite: values.invite,
       ...(description.value !== undefined && { description: description.value }),
-      ...(lng.value !== undefined && { lng: lng.value }),
       ...(ownerPhone.value !== undefined && { ownerPhone: ownerPhone.value }),
     }
 

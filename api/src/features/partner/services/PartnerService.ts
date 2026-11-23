@@ -562,6 +562,83 @@ export class PartnerService {
     }
   }
 
+  /**
+   * Reenvia la invitacion a un miembro concreto del equipo.
+   *
+   * Solo aplica a cuentas `invited`: si la persona ya definio contrasena, no
+   * hay token que renovar; para forzar el cambio existe la pantalla de
+   * seguridad, que la API exige al iniciar sesion.
+   */
+  public async resendMemberInvitation(
+    partnerId: string,
+    userId: string
+  ): Promise<void> {
+    const mailPayload = await AppDataSource.transaction(async (manager) => {
+      const partner = await manager.findOne(Partner, {
+        where: { id: partnerId },
+      });
+
+      if (!partner) {
+        throw new NotFoundError("Socio no encontrado");
+      }
+
+      if (partner.status !== PartnerStatus.ACTIVE) {
+        throw new BadRequestError(
+          "El socio debe estar aprobado (active) para reenviar la invitación"
+        );
+      }
+
+      const member = await manager.findOne(PartnerUser, {
+        where: { partnerId, userId },
+        relations: { user: true },
+      });
+
+      if (!member?.user) {
+        throw new NotFoundError(
+          "Esa persona no pertenece al equipo de este socio",
+          "MEMBER_NOT_FOUND"
+        );
+      }
+
+      if (member.user.status !== UserStatus.INVITED) {
+        throw new BadRequestError(
+          "Esa cuenta ya tiene contraseña. Para forzar un cambio, la persona debe entrar y cambiarla",
+          "MEMBER_ALREADY_ACTIVE"
+        );
+      }
+
+      await manager.delete(UserToken, {
+        userId,
+        type: UserTokenType.ACTIVATION,
+      });
+
+      const plainToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(plainToken)
+        .digest("hex");
+
+      await manager.save(
+        manager.create(UserToken, {
+          userId,
+          type: UserTokenType.ACTIVATION,
+          tokenHash,
+          expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+          usedAt: null,
+        })
+      );
+
+      return {
+        to: member.user.email,
+        ownerName: member.user.name,
+        commercialName: partner.commercialName,
+        activationToken: plainToken,
+      };
+    });
+
+    await this.mailService.sendPartnerActivationEmail(mailPayload);
+  }
+
   public async listMembers(partnerId: string): Promise<PartnerMemberResponse[]> {
     const partner = await this.partnerRepo.findOne({ where: { id: partnerId } });
     if (!partner) {
@@ -584,6 +661,7 @@ export class PartnerService {
         email: l.user.email,
         phone: l.user.phone,
         userStatus: l.user.status,
+        mustChangePassword: l.user.mustChangePassword,
         role: l.role,
         isActive: l.isActive,
         createdAt: l.createdAt,
@@ -662,6 +740,7 @@ export class PartnerService {
             email: user.email,
             phone: user.phone,
             userStatus: user.status,
+            mustChangePassword: user.mustChangePassword,
             role: member.role,
             isActive: member.isActive,
             createdAt: member.createdAt,
@@ -731,6 +810,7 @@ export class PartnerService {
         email: member.user.email,
         phone: member.user.phone,
         userStatus: member.user.status,
+        mustChangePassword: member.user.mustChangePassword,
         role: member.role,
         isActive: member.isActive,
         createdAt: member.createdAt,

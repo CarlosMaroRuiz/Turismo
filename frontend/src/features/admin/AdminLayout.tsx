@@ -33,6 +33,11 @@ export default function AdminLayout() {
     return <Navigate to={PATHS.loginAdmin} replace />
   }
 
+  // La API no deja operar hasta cambiar la contrasena inicial.
+  if (session.user.mustChangePassword) {
+    return <Navigate to={PATHS.changePassword} replace />
+  }
+
   return (
     <div className="flex min-h-screen bg-fondo-claro">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between rounded-r-3xl bg-marca px-4 py-6 text-fondo-claro lg:flex">

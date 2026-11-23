@@ -1,5 +1,5 @@
 import { cn } from '../../lib/cn'
-import { buttonBase, buttonSizes, buttonVariants } from './styles'
+import { buttonBase, buttonShapes, buttonSizes, buttonVariants } from './styles'
 import type { ButtonProps } from './type'
 
 /**
@@ -8,12 +8,13 @@ import type { ButtonProps } from './type'
  * ```tsx
  * <Button>Guardar</Button>
  * <Button variant="secondary" size="sm">Cancelar</Button>
- * <Button size="xl" fullWidth>Reservar</Button>
+ * <Button size="xl" shape="pill" fullWidth>Reservar</Button>
  * ```
  */
 export function Button({
   variant = 'primary',
   size = 'md',
+  shape = 'rounded',
   fullWidth = false,
   className,
   type = 'button',
@@ -24,6 +25,7 @@ export function Button({
       type={type}
       className={cn(
         buttonBase,
+        buttonShapes[shape],
         buttonVariants[variant],
         buttonSizes[size],
         fullWidth && 'w-full',

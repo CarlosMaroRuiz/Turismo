@@ -14,7 +14,7 @@
 
 export { API_URL } from '../config/env'
 
-export { api, axiosClient, onSessionExpired, request } from './client'
+export { api, axiosClient, onPasswordChangeRequired, onSessionExpired, request } from './client'
 
 export { ApiError, asApiError, isApiError, toMessage } from './errors'
 export type { ApiErrorOptions, KnownErrorCode } from './errors'

@@ -112,6 +112,13 @@ export class PartnerRoutes extends BaseRoutes<PartnerController> {
       this.controller.addMember
     );
 
+    this.router.post(
+      "/:id/members/:userId/resend-invite",
+      AuthMiddleware.authenticate,
+      AuthMiddleware.authorizeRoles(RoleCode.SUPER_USER, RoleCode.PARTNER),
+      this.controller.resendMember
+    );
+
     this.router.patch(
       "/:id/members/:memberId",
       AuthMiddleware.authenticate,
@@ -215,6 +222,13 @@ export class PartnerRoutes extends BaseRoutes<PartnerController> {
         roles: [RoleCode.SUPER_USER, RoleCode.PARTNER],
         body: addPartnerMemberSchema,
         successStatus: 201,
+      },
+      {
+        method: "post",
+        path: "/api/v1/partners/:id/members/:userId/resend-invite",
+        summary: "Reenvía la invitación a un miembro que sigue sin activar",
+        auth: "user",
+        roles: [RoleCode.SUPER_USER, RoleCode.PARTNER],
       },
       {
         method: "patch",

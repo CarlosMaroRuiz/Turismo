@@ -146,6 +146,19 @@ export function onSessionExpired(handler: (() => void) | null): void {
   sessionExpiredHandler = handler
 }
 
+let passwordChangeHandler: (() => void) | null = null
+
+/**
+ * Qué hacer cuando la API responde 403 `PASSWORD_CHANGE_REQUIRED`.
+ *
+ * Es el caso de una cuenta con `mustChangePassword`: la sesión vale, pero la
+ * API no deja operar hasta cambiar la contraseña. No se limpia la sesión,
+ * solo se lleva al usuario a la pantalla de cambio.
+ */
+export function onPasswordChangeRequired(handler: (() => void) | null): void {
+  passwordChangeHandler = handler
+}
+
 function isAuthPath(url: string | undefined): boolean {
   if (url === undefined) {
     return false
@@ -200,7 +213,13 @@ axiosClient.interceptors.response.use(
       }
     }
 
-    return Promise.reject(toApiError(error))
+    const apiError = toApiError(error)
+
+    if (apiError.status === 403 && apiError.code === 'PASSWORD_CHANGE_REQUIRED') {
+      passwordChangeHandler?.()
+    }
+
+    return Promise.reject(apiError)
   },
 )
 

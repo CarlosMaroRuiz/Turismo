@@ -1,46 +1,55 @@
 import { Link } from 'react-router'
 
+import { toMessage } from '@core/http'
 import { PATHS } from '@core/routes/types/paths'
 
 import { AuthLayout } from '../components/AuthLayout'
 import { LoginForm } from '../components/LoginForm'
-
-import heroPartner from '@assets/hero-partner.webp'
+import { useLogin } from '../hooks/useLogin'
 
 export default function PartnerLoginPage() {
+  const { entrar, isLoading, error, aviso, reset } = useLogin('partner')
+
+  const mensajeError = aviso ?? (error !== null ? toMessage(error) : null)
+
   return (
     <AuthLayout
-      eyebrow="Socios"
-      title="Tu hotel o agencia, conectado con más viajeros."
-      subtitle="Publica paquetes, responde cotizaciones y gestiona tu disponibilidad."
-      tone="acento"
-      image={heroPartner}
-      imageAlt="Botes de madera amarrados en un muelle sobre un lago turquesa rodeado de montañas"
+      eyebrow="Portal Socios"
+      title="TURISMO"
+      subtitle="HOTELES · TOURS · EXPERIENCIAS"
     >
       <LoginForm
-        titulo="Acceso para socios"
-        subtitulo="Hoteles, agencias y prestadores de servicios."
-        cta="Entrar a mi panel"
+        titulo="INICIAR SESIÓN"
+        subtitulo="Acceso para hoteles, agencias y operadores."
+        cta="ENTRAR"
+        isLoading={isLoading}
+        error={mensajeError}
         onSubmit={(datos) => {
-          // TODO: POST /auth/login con los datos y guardar el token
-          console.log('login socio', datos)
+          reset()
+          void entrar(datos).catch(() => {
+            // El error ya queda en el hook y se muestra arriba.
+          })
         }}
         notaFinal={
-          <>
-            ¿Aún no tienes cuenta?{' '}
-            <span className="cursor-pointer font-semibold text-acento hover:underline">
-              Registra tu agencia
-            </span>
-          </>
+          <div className="flex flex-col gap-1.5 text-xs text-texto-oscuro/65">
+            <p>
+              ¿Aún no tienes cuenta?{' '}
+              <span className="cursor-pointer font-bold text-marca hover:underline">
+                Registra tu agencia
+              </span>
+            </p>
+            <p>
+              ¿Equipo interno?{' '}
+              <Link
+                to={PATHS.loginAdmin}
+                className="font-semibold text-acento hover:underline"
+              >
+                Acceso administrador
+              </Link>
+            </p>
+          </div>
         }
       />
-
-      <p className="mt-8 text-center text-sm text-texto-oscuro/50">
-        ¿Eres del equipo interno?{' '}
-        <Link to={PATHS.loginAdmin} className="font-medium text-texto-oscuro/70 hover:underline">
-          Acceso administrador
-        </Link>
-      </p>
     </AuthLayout>
   )
 }

@@ -22,6 +22,7 @@ export interface Partner {
   commercialName: string
   legalName: string
   slug: string
+  logoUrl: string | null
   description: string | null
   address: string
   lat: number | null
@@ -54,6 +55,8 @@ export interface PartnerMember {
   email: string
   phone: string | null
   userStatus: string
+  /** true si la API le exige cambiar la contrasena al entrar. */
+  mustChangePassword: boolean
   role: PartnerMemberRole
   isActive: boolean
   createdAt: string

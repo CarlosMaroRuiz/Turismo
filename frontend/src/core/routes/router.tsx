@@ -1,7 +1,7 @@
 import { createBrowserRouter, redirect } from 'react-router'
 
 import { LoadSuspense } from '@core/helpers/WithSuspense'
-import { onSessionExpired } from '@core/http'
+import { onPasswordChangeRequired, onSessionExpired } from '@core/http'
 import { PATHS } from '@core/routes/types/paths'
 
 /**
@@ -20,6 +20,11 @@ export const router = createBrowserRouter([
     // Acceso de hoteles, agencias y atractivos
     path: PATHS.login,
     element: LoadSuspense(() => import('@features/auth/partners')),
+  },
+  {
+    // Cambio obligatorio de contrasena (403 PASSWORD_CHANGE_REQUIRED)
+    path: PATHS.changePassword,
+    element: LoadSuspense(() => import('@features/auth/change-password')),
   },
   {
     // Activacion desde el enlace del correo de invitacion
@@ -65,6 +70,37 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    // Portal del socio: el layout arma la navegacion segun su categoria
+    path: PATHS.panel,
+    element: LoadSuspense(() => import('@features/partner/PartnerLayout')),
+    children: [
+      {
+        index: true,
+        loader: () => redirect(PATHS.panelTeam),
+      },
+      {
+        path: 'equipo',
+        element: LoadSuspense(() => import('@features/partner/pages/TeamPage')),
+      },
+      {
+        path: 'ficha',
+        element: LoadSuspense(() => import('@features/partner/pages/ProfilePage')),
+      },
+      {
+        path: 'habitaciones',
+        element: LoadSuspense(() => import('@features/rooms/pages/RoomListPage')),
+      },
+      {
+        path: 'paquetes',
+        element: LoadSuspense(() => import('@features/packages/pages/PackageListPage')),
+      },
+      {
+        path: 'paquetes/:id',
+        element: LoadSuspense(() => import('@features/packages/pages/PackageDetailPage')),
+      },
+    ],
+  },
+  {
     // Cualquier URL desconocida regresa al acceso publico
     path: '*',
     loader: () => redirect(PATHS.login),
@@ -78,4 +114,12 @@ export const router = createBrowserRouter([
  */
 onSessionExpired(() => {
   void router.navigate(PATHS.login, { replace: true })
+})
+
+/**
+ * La API responde 403 `PASSWORD_CHANGE_REQUIRED` mientras la cuenta no cambie
+ * la contrasena. La sesion sigue siendo valida, asi que solo se redirige.
+ */
+onPasswordChangeRequired(() => {
+  void router.navigate(PATHS.changePassword, { replace: true })
 })

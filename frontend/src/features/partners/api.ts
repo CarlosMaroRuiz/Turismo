@@ -26,6 +26,8 @@ export const PARTNER_PATHS = {
   members: (id: string): string => `/partners/${id}/members`,
   member: (id: string, memberId: string): string =>
     `/partners/${id}/members/${memberId}`,
+  resendMemberInvite: (id: string, userId: string): string =>
+    `/partners/${id}/members/${userId}/resend-invite`,
 } as const
 
 /**
@@ -82,6 +84,14 @@ export function resendPartnerInvite(id: string): Promise<null> {
 /** Equipo del socio. No paginado: devuelve el arreglo completo. */
 export function getPartnerMembers(id: string): Promise<PartnerMember[]> {
   return api.get<PartnerMember[]>(PARTNER_PATHS.members(id))
+}
+
+/**
+ * Reenvia la invitacion a un miembro que sigue sin activar.
+ * Si la cuenta ya tiene contrasena, la API responde 400 MEMBER_ALREADY_ACTIVE.
+ */
+export function resendMemberInvite(id: string, userId: string): Promise<null> {
+  return api.post<null>(PARTNER_PATHS.resendMemberInvite(id, userId))
 }
 
 export function addPartnerMember(

@@ -8,6 +8,8 @@
 export const PATHS = {
   /** Acceso de socios (hoteles, agencias y atractivos). */
   login: '/login',
+  /** Cambio obligatorio de contrasena antes de operar. */
+  changePassword: '/cambiar-contrasena',
   /** Acceso del equipo interno. */
   loginAdmin: '/login/admin',
   /** Activacion de la cuenta de un socio desde el enlace del correo. */
@@ -18,6 +20,13 @@ export const PATHS = {
   adminPartnerCreate: '/admin/socios/nuevo',
   adminCategories: '/admin/categorias',
   adminRegions: '/admin/regiones',
+  /** Portal del socio: hoteles, agencias y operadores de atractivos. */
+  panel: '/panel',
+  panelProfile: '/panel/ficha',
+  panelTeam: '/panel/equipo',
+  panelRooms: '/panel/habitaciones',
+  panelPackages: '/panel/paquetes',
+  panelPackageDetail: (id: string) => `/panel/paquetes/${id}`,
 } as const
 
 /** Nombres validos de ruta. */

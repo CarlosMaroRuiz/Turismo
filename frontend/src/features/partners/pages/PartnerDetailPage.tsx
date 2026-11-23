@@ -9,6 +9,7 @@ import { QueryState } from '@common/components/QueryState'
 import { toMessage, useAction } from '@core/http'
 import { PATHS } from '@core/routes/types/paths'
 import { formatDate, formatDateTime } from '@lib/format'
+import { PHONE_LENGTH, PHONE_PATTERN, soloDigitos } from '@lib/validation'
 
 import { usePartnerCategories } from '@features/partner-categories'
 import { useRegion } from '@features/regions'
@@ -18,6 +19,7 @@ import {
   approvePartner,
   reactivatePartner,
   rejectPartner,
+  resendMemberInvite,
   resendPartnerInvite,
   suspendPartner,
 } from '../api'
@@ -66,6 +68,9 @@ export default function PartnerDetailPage() {
   const region = useRegion(socio.data?.regionId)
 
   const aprobar = useAction(approvePartner)
+  const reenviarMiembro = useAction((entrada: { id: string; userId: string }) =>
+    resendMemberInvite(entrada.id, entrada.userId),
+  )
   const rechazar = useAction((entrada: { id: string; motivo: string }) =>
     rejectPartner(entrada.id, entrada.motivo),
   )
@@ -281,7 +286,6 @@ export default function PartnerDetailPage() {
               <Dato etiqueta="Razon social" valor={datos.legalName} />
               <Dato etiqueta="Ubicacion" valor={nombreUbicacion()} />
               <Dato etiqueta="Direccion" valor={datos.address} />
-              <Dato etiqueta="Longitud" valor={datos.lng === null ? '-' : String(datos.lng)} />
               <Dato etiqueta="Alta" valor={formatDate(datos.createdAt)} />
               <Dato etiqueta="Aprobado" valor={formatDateTime(datos.approvedAt)} />
             </div>
@@ -315,6 +319,7 @@ export default function PartnerDetailPage() {
                         <th className="px-6 py-3 font-semibold">Correo</th>
                         <th className="px-6 py-3 font-semibold">Rol</th>
                         <th className="px-6 py-3 font-semibold">Estado</th>
+                        <th className="px-6 py-3 text-right font-semibold">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -326,9 +331,38 @@ export default function PartnerDetailPage() {
                             {PARTNER_MEMBER_ROLE_LABELS[miembro.role]}
                           </td>
                           <td className="px-6 py-3">
-                            <Badge tone={miembro.isActive ? 'success' : 'neutral'}>
-                              {miembro.isActive ? 'Activo' : 'Inactivo'}
-                            </Badge>
+                            {miembro.userStatus === 'invited' ? (
+                              <Badge tone="warning">Sin activar</Badge>
+                            ) : (
+                              <Badge tone={miembro.isActive ? 'success' : 'neutral'}>
+                                {miembro.isActive ? 'Activo' : 'Inactivo'}
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="flex items-center justify-end gap-2">
+                              {miembro.userStatus === 'invited' && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={reenviarMiembro.isLoading}
+                                  onClick={() => {
+                                    void reenviarMiembro
+                                      .execute({ id, userId: miembro.userId })
+                                      .then(() => miembros.refetch())
+                                      .catch(() => {})
+                                  }}
+                                >
+                                  Reenviar invitación
+                                </Button>
+                              )}
+                              {miembro.userStatus !== 'invited' &&
+                                miembro.mustChangePassword === true && (
+                                  <span className="text-xs text-texto-oscuro/50">
+                                    Debe cambiar su contrasena
+                                  </span>
+                                )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -392,16 +426,18 @@ export default function PartnerDetailPage() {
                 <FormField
                   htmlFor="miembroTelefono"
                   label="Telefono"
-                  hint="Opcional. Entre 7 y 30 caracteres."
+                  hint="Opcional. 10 digitos, solo numeros"
                 >
                   <input
                     id="miembroTelefono"
                     type="tel"
+                    inputMode="numeric"
+                    pattern={PHONE_PATTERN}
+                    maxLength={PHONE_LENGTH}
+                    title="10 digitos, solo numeros"
                     className={inputClass}
-                    minLength={7}
-                    maxLength={30}
                     value={telefonoMiembro}
-                    onChange={(event) => setTelefonoMiembro(event.target.value)}
+                    onChange={(event) => setTelefonoMiembro(soloDigitos(event.target.value))}
                   />
                 </FormField>
 

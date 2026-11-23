@@ -7,9 +7,6 @@ import { AuthLayout } from '../components/AuthLayout'
 import { LoginForm } from '../components/LoginForm'
 import { useLogin } from '../hooks/useLogin'
 
-// Cuando tengas la imagen, colocala en src/assets/ y descomenta:
-// import heroAdmin from '@assets/hero-admin.webp'
-
 export default function AdminLoginPage() {
   const { entrar, isLoading, error, aviso, reset } = useLogin()
 
@@ -17,16 +14,14 @@ export default function AdminLoginPage() {
 
   return (
     <AuthLayout
-      eyebrow="Administracion"
-      title="Supervisa destinos, socios y comisiones."
-      subtitle="Acceso exclusivo del equipo interno de Turismo."
-      tone="marca"
-      imageAlt=""
+      eyebrow="Administración"
+      title="PANEL DE CONTROL"
+      subtitle="SUPERVISIÓN Y GESTIÓN"
     >
       <LoginForm
-        titulo="Acceso administrador"
-        subtitulo="Usa tu cuenta corporativa."
-        cta="Entrar al panel"
+        titulo="ACCESO ADMINISTRADOR"
+        subtitulo="Panel exclusivo para administradores de la plataforma."
+        cta="ENTRAR"
         isLoading={isLoading}
         error={mensajeError}
         onSubmit={(datos) => {
@@ -36,12 +31,12 @@ export default function AdminLoginPage() {
           })
         }}
         notaFinal={
-          <>
-            Eres un socio?{' '}
-            <Link to={PATHS.login} className="font-semibold text-acento hover:underline">
-              Entra por aqui
+          <div className="text-xs text-texto-oscuro/65">
+            ¿Eres un socio?{' '}
+            <Link to={PATHS.login} className="font-bold text-marca hover:underline">
+              Entra por aquí
             </Link>
-          </>
+          </div>
         }
       />
     </AuthLayout>

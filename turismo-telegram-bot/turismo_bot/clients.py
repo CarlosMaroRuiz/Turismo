@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import re
 import time
 from typing import Any
@@ -57,6 +57,28 @@ class Turismo:
         token = await self._token(rejected=token)
         return await self._send(method, path, headers={"Authorization": f"Bearer {token}"}, **kwargs)
 
+    async def binary(self, path: str, *, params: dict | None = None) -> bytes:
+        """Descarga un recurso binario del API (por ejemplo el QR del comprobante)."""
+        token = await self._token()
+        try:
+            response = await self.http.get(
+                self.base_url + path,
+                params=params,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if response.status_code == 401:
+                token = await self._token(rejected=token)
+                response = await self.http.get(
+                    self.base_url + path,
+                    params=params,
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+        except httpx.RequestError as exc:
+            raise TurismoError("TURISMO_UNAVAILABLE", 502) from exc
+        if response.is_error:
+            raise TurismoError("TURISMO_UNAVAILABLE", response.status_code)
+        return response.content
+
 
 class Telegram:
     def __init__(self, http: httpx.AsyncClient, token: str):
@@ -72,3 +94,40 @@ class Telegram:
             raise RuntimeError("Telegram no está disponible") from None
         if not success:
             raise RuntimeError(f"Telegram rechazó {method} (HTTP {response.status_code})")
+
+    async def send_chat_action(self, chat_id: int, action: str = "typing") -> None:
+        """Muestra "escribiendo..." en el chat. Falla en silencio: es cosmetico."""
+        try:
+            await self.http.post(self.url + "sendChatAction",
+                                 json={"chat_id": chat_id, "action": action})
+        except (httpx.RequestError, ValueError):
+            pass
+
+    async def send_sticker(self, chat_id: int, ruta: str) -> None:
+        """Envía un sticker (.webp de 512 px) desde un archivo del paquete."""
+        try:
+            with open(ruta, "rb") as archivo:
+                response = await self.http.post(
+                    self.url + "sendSticker",
+                    data={"chat_id": str(chat_id)},
+                    files={"sticker": ("bienvenida.webp", archivo.read(), "image/webp")},
+                )
+            success = response.is_success and response.json().get("ok")
+        except (OSError, httpx.RequestError, ValueError) as exc:
+            raise RuntimeError("Telegram no está disponible") from None
+        if not success:
+            raise RuntimeError(f"Telegram rechazó sendSticker (HTTP {response.status_code})")
+
+    async def send_photo(self, chat_id: int, photo: bytes, caption: str) -> None:
+        """Envía una imagen (el QR del comprobante) con su leyenda."""
+        try:
+            response = await self.http.post(
+                self.url + "sendPhoto",
+                data={"chat_id": str(chat_id), "caption": caption[:1024]},
+                files={"photo": ("comprobante.png", photo, "image/png")},
+            )
+            success = response.is_success and response.json().get("ok")
+        except (httpx.RequestError, ValueError) as exc:
+            raise RuntimeError("Telegram no está disponible") from None
+        if not success:
+            raise RuntimeError(f"Telegram rechazó sendPhoto (HTTP {response.status_code})")

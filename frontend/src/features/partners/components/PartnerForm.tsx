@@ -4,7 +4,7 @@ import { Button } from '@common/Buttons'
 import { FormField } from '@common/components/FormField'
 import { inputClass, selectClass, textareaClass } from '@common/components/FormField/styles'
 import type { ApiError } from '@core/http'
-import { EMAIL_MAX, PARTNER_LIMITS, rango } from '@lib/validation'
+import { EMAIL_MAX, PARTNER_LIMITS, PHONE_HINT, PHONE_LENGTH, PHONE_PATTERN, rango, soloDigitos } from '@lib/validation'
 
 import type { PartnerCategory } from '@features/partner-categories'
 import type { Region, State } from '@features/regions'
@@ -17,7 +17,6 @@ export interface PartnerFormValues {
   legalName: string
   description: string
   address: string
-  lng: string
   contactName: string
   contactEmail: string
   contactPhone: string
@@ -34,7 +33,6 @@ const INITIAL_VALUES: PartnerFormValues = {
   legalName: '',
   description: '',
   address: '',
-  lng: '',
   contactName: '',
   contactEmail: '',
   contactPhone: '',
@@ -60,11 +58,9 @@ interface PartnerFormProps {
 /**
  * Alta de socio (hotel, agencia u operador de atractivos).
  *
- * En el caso normal el contacto del negocio y el responsable de la cuenta son
- * la misma persona, asi que se capturan una sola vez y se envian en los dos
- * campos del contrato. Si el responsable es otro (por ejemplo, la
- * administracion central de un grupo), se desmarca la casilla y se captura
- * aparte.
+ * Lo que se crea es la **cuenta del responsable**: su correo recibe la
+ * invitacion, define la contrasena y administra el portal. Por eso se captura
+ * una sola vez y se reutiliza como contacto publico del negocio.
  */
 export function PartnerForm({
   categorias,
@@ -79,7 +75,6 @@ export function PartnerForm({
 }: PartnerFormProps) {
   const [values, setValues] = useState<PartnerFormValues>(INITIAL_VALUES)
   const [stateId, setStateId] = useState('')
-  const [responsableDistinto, setResponsableDistinto] = useState(false)
 
   const set = <K extends keyof PartnerFormValues>(name: K, value: PartnerFormValues[K]): void => {
     setValues((previous) => ({ ...previous, [name]: value }))
@@ -88,16 +83,13 @@ export function PartnerForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault()
 
-    const efectivos: PartnerFormValues = responsableDistinto
-      ? values
-      : {
-          ...values,
-          ownerName: values.contactName,
-          ownerEmail: values.contactEmail,
-          ownerPhone: values.contactPhone,
-        }
-
-    onSubmit(efectivos)
+    // El contacto del negocio son los mismos datos del responsable.
+    onSubmit({
+      ...values,
+      contactName: values.ownerName,
+      contactEmail: values.ownerEmail,
+      contactPhone: values.ownerPhone,
+    })
   }
 
   const fieldError = (name: string): string | undefined => error?.fieldError(name)
@@ -109,9 +101,7 @@ export function PartnerForm({
         ? 'Este estado no tiene municipios cargados en la base.'
         : undefined
 
-  const correoInvitacion = responsableDistinto
-    ? values.ownerEmail.trim() || 'la persona responsable'
-    : values.contactEmail.trim() || 'la persona de contacto'
+  const correoInvitacion = values.ownerEmail.trim() || 'la persona responsable'
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -269,167 +259,78 @@ export function PartnerForm({
             </FormField>
           </div>
 
-          <FormField
-            htmlFor="lng"
-            label="Longitud"
-            hint="Opcional. Entre -180 y 180."
-            error={fieldError('lng')}
-          >
-            <input
-              id="lng"
-              type="number"
-              step="any"
-              min={-180}
-              max={180}
-              value={values.lng}
-              onChange={(event) => set('lng', event.target.value)}
-              className={inputClass}
-            />
-          </FormField>
         </div>
       </section>
 
       <section className="rounded-2xl border border-borde bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-texto-oscuro/50">
-          Contacto y responsable
+          Responsable de la cuenta
         </h2>
         <p className="mb-4 text-xs text-texto-oscuro/60">
-          Esta persona es la misma en los tres lados: el contacto del negocio, quien recibe el
-          correo y quien administra el portal del socio.
+          Es la cuenta que se crea: recibe la invitacion, define su contrasena y administra el
+          portal del socio. Estos datos se usan tambien como contacto publico del negocio.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
-            htmlFor="contactName"
-            label="Nombre"
+            htmlFor="ownerName"
+            label="Nombre completo"
             required
-            hint={rango(PARTNER_LIMITS.contactName)}
-            error={fieldError('contactName')}
+            hint={rango(PARTNER_LIMITS.ownerName)}
+            error={fieldError('ownerName')}
           >
             <input
-              id="contactName"
+              id="ownerName"
               type="text"
               required
-              minLength={PARTNER_LIMITS.contactName.min}
-              maxLength={PARTNER_LIMITS.contactName.max}
-              value={values.contactName}
-              onChange={(event) => set('contactName', event.target.value)}
+              minLength={PARTNER_LIMITS.ownerName.min}
+              maxLength={PARTNER_LIMITS.ownerName.max}
+              value={values.ownerName}
+              onChange={(event) => set('ownerName', event.target.value)}
               className={inputClass}
             />
           </FormField>
 
           <FormField
-            htmlFor="contactEmail"
+            htmlFor="ownerEmail"
             label="Correo"
             required
             hint={`Hasta ${EMAIL_MAX} caracteres. Aqui llega la invitacion.`}
-            error={fieldError('contactEmail')}
+            error={fieldError('ownerEmail')}
           >
             <input
-              id="contactEmail"
+              id="ownerEmail"
               type="email"
               required
               maxLength={EMAIL_MAX}
               autoComplete="email"
-              value={values.contactEmail}
-              onChange={(event) => set('contactEmail', event.target.value)}
+              value={values.ownerEmail}
+              onChange={(event) => set('ownerEmail', event.target.value)}
               className={inputClass}
             />
           </FormField>
 
           <FormField
-            htmlFor="contactPhone"
+            htmlFor="ownerPhone"
             label="Telefono"
             required
-            hint={rango(PARTNER_LIMITS.contactPhone)}
-            error={fieldError('contactPhone')}
+            hint={PHONE_HINT}
+            error={fieldError('ownerPhone') ?? fieldError('contactPhone')}
           >
             <input
-              id="contactPhone"
+              id="ownerPhone"
               type="tel"
+              inputMode="numeric"
               required
-              minLength={PARTNER_LIMITS.contactPhone.min}
-              maxLength={PARTNER_LIMITS.contactPhone.max}
-              value={values.contactPhone}
-              onChange={(event) => set('contactPhone', event.target.value)}
+              pattern={PHONE_PATTERN}
+              maxLength={PHONE_LENGTH}
+              title="10 digitos, solo numeros"
+              value={values.ownerPhone}
+              onChange={(event) => set('ownerPhone', soloDigitos(event.target.value))}
               className={inputClass}
             />
           </FormField>
         </div>
-
-        <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-texto-oscuro/80">
-          <input
-            type="checkbox"
-            checked={responsableDistinto}
-            onChange={(event) => setResponsableDistinto(event.target.checked)}
-            className="mt-0.5 size-4 cursor-pointer accent-acento"
-          />
-          <span>
-            El responsable de la cuenta es otra persona
-            <span className="mt-0.5 block text-xs text-texto-oscuro/50">
-              Por ejemplo, la administracion central de un grupo hotelero.
-            </span>
-          </span>
-        </label>
-
-        {responsableDistinto && (
-          <div className="mt-5 grid gap-4 border-t border-borde pt-5 sm:grid-cols-2">
-            <FormField
-              htmlFor="ownerName"
-              label="Nombre del responsable"
-              required
-              hint={rango(PARTNER_LIMITS.ownerName)}
-              error={fieldError('ownerName')}
-            >
-              <input
-                id="ownerName"
-                type="text"
-                required
-                minLength={PARTNER_LIMITS.ownerName.min}
-                maxLength={PARTNER_LIMITS.ownerName.max}
-                value={values.ownerName}
-                onChange={(event) => set('ownerName', event.target.value)}
-                className={inputClass}
-              />
-            </FormField>
-
-            <FormField
-              htmlFor="ownerEmail"
-              label="Correo del responsable"
-              required
-              hint={`Hasta ${EMAIL_MAX} caracteres. Aqui llega la invitacion.`}
-              error={fieldError('ownerEmail')}
-            >
-              <input
-                id="ownerEmail"
-                type="email"
-                required
-                maxLength={EMAIL_MAX}
-                autoComplete="email"
-                value={values.ownerEmail}
-                onChange={(event) => set('ownerEmail', event.target.value)}
-                className={inputClass}
-              />
-            </FormField>
-
-            <FormField
-              htmlFor="ownerPhone"
-              label="Telefono del responsable"
-              hint={`Opcional. ${rango(PARTNER_LIMITS.ownerPhone)}`}
-              error={fieldError('ownerPhone')}
-            >
-              <input
-                id="ownerPhone"
-                type="tel"
-                minLength={PARTNER_LIMITS.ownerPhone.min}
-                maxLength={PARTNER_LIMITS.ownerPhone.max}
-                value={values.ownerPhone}
-                onChange={(event) => set('ownerPhone', event.target.value)}
-                className={inputClass}
-              />
-            </FormField>
-          </div>
-        )}
       </section>
 
       <section className="rounded-2xl border border-marca/30 bg-marca/5 p-6">

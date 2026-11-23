@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router'
 import { Badge } from '@common/components/Badge'
 import { Button } from '@common/Buttons'
 import { FormField } from '@common/components/FormField'
+import { Modal } from '@common/components/Modal'
 import { inputClass, selectClass } from '@common/components/FormField/styles'
 import { QueryState } from '@common/components/QueryState'
 import { toMessage, useAction } from '@core/http'
@@ -53,6 +54,7 @@ export default function RegionListPage() {
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevoSlug, setNuevoSlug] = useState('')
   const [nuevoPadre, setNuevoPadre] = useState('')
+  const [modalAbierto, setModalAbierto] = useState(false)
 
   const municipiosPadre = useRegions(
     {
@@ -91,6 +93,7 @@ export default function RegionListPage() {
         setNuevoNombre('')
         setNuevoSlug('')
         setNuevoPadre('')
+        setModalAbierto(false)
         return regiones.refetch()
       })
       .catch(() => {
@@ -107,89 +110,70 @@ export default function RegionListPage() {
 
   return (
     <section className="flex flex-col gap-5">
-      <header>
-        <h1 className="text-2xl font-bold text-texto-oscuro">Regiones</h1>
-        <p className="mt-1 text-sm text-texto-oscuro/60">
-          {regiones.data !== undefined
-            ? `${regiones.data.meta.total} ${regiones.data.meta.total === 1 ? 'region' : 'regiones'}`
-            : 'Municipios y zonas turisticas'}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-texto-oscuro">Regiones</h1>
+          <p className="mt-1 text-sm text-texto-oscuro/60">
+            {regiones.data !== undefined
+              ? `${regiones.data.meta.total} ${regiones.data.meta.total === 1 ? 'region' : 'regiones'}`
+              : 'Municipios y zonas turisticas'}
+          </p>
+        </div>
+
+        <Button
+          size="md"
+          onClick={() => {
+            crear.reset()
+            setModalAbierto(true)
+          }}
+        >
+          Agregar region
+        </Button>
       </header>
 
-      <form
-        onSubmit={enviar}
-        className="grid gap-4 rounded-2xl border border-borde bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1.4fr_1fr_auto] lg:items-end"
+      <Modal
+        open={modalAbierto}
+        title="Nueva region"
+        description="Un municipio no lleva padre; una zona requiere el municipio del mismo estado."
+        onClose={() => setModalAbierto(false)}
       >
-        <FormField htmlFor="regionEstado" label="Estado" required>
-          <select
-            id="regionEstado"
-            required
-            className={selectClass}
-            value={nuevoEstado}
-            onChange={(event) => {
-              setNuevoEstado(event.target.value)
-              setNuevoPadre('')
-            }}
-          >
-            <option value="">Selecciona un estado</option>
-            {(estados.data ?? []).map((estado) => (
-              <option key={estado.id} value={estado.id}>
-                {estado.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
+        <form onSubmit={enviar} className="flex flex-col gap-4">
+          <FormField htmlFor="regionEstado" label="Estado" required>
+            <select
+              id="regionEstado"
+              required
+              className={selectClass}
+              value={nuevoEstado}
+              onChange={(event) => {
+                setNuevoEstado(event.target.value)
+                setNuevoPadre('')
+              }}
+            >
+              <option value="">Selecciona un estado</option>
+              {(estados.data ?? []).map((estado) => (
+                <option key={estado.id} value={estado.id}>
+                  {estado.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
 
-        <FormField htmlFor="regionTipo" label="Tipo" required>
-          <select
-            id="regionTipo"
-            className={selectClass}
-            value={nuevoTipo}
-            onChange={(event) => {
-              setNuevoTipo(event.target.value as RegionType)
-              setNuevoPadre('')
-            }}
-          >
-            <option value="municipality">{REGION_TYPE_LABELS.municipality}</option>
-            <option value="zone">{REGION_TYPE_LABELS.zone}</option>
-          </select>
-        </FormField>
+          <FormField htmlFor="regionTipo" label="Tipo" required>
+            <select
+              id="regionTipo"
+              className={selectClass}
+              value={nuevoTipo}
+              onChange={(event) => {
+                setNuevoTipo(event.target.value as RegionType)
+                setNuevoPadre('')
+              }}
+            >
+              <option value="municipality">{REGION_TYPE_LABELS.municipality}</option>
+              <option value="zone">{REGION_TYPE_LABELS.zone}</option>
+            </select>
+          </FormField>
 
-        <FormField htmlFor="regionNombre" label="Nombre" required hint="Entre 2 y 150 caracteres">
-          <input
-            id="regionNombre"
-            required
-            minLength={2}
-            maxLength={150}
-            className={inputClass}
-            value={nuevoNombre}
-            onChange={(event) => setNuevoNombre(event.target.value)}
-          />
-        </FormField>
-
-        <FormField
-          htmlFor="regionSlug"
-          label="Slug"
-          hint="Opcional. Se genera si lo dejas vacio"
-        >
-          <input
-            id="regionSlug"
-            className={inputClass}
-            minLength={2}
-            maxLength={180}
-            pattern={SLUG_PATTERN}
-            title="Solo minusculas, numeros y guiones simples"
-            value={nuevoSlug}
-            onChange={(event) => setNuevoSlug(event.target.value)}
-          />
-        </FormField>
-
-        <Button type="submit" size="md" disabled={crear.isLoading}>
-          {crear.isLoading ? 'Creando...' : 'Agregar'}
-        </Button>
-
-        {nuevoTipo === 'zone' && (
-          <div className="sm:col-span-2 lg:col-span-5">
+          {nuevoTipo === 'zone' && (
             <FormField
               htmlFor="regionPadre"
               label="Municipio padre"
@@ -218,15 +202,63 @@ export default function RegionListPage() {
                 ))}
               </select>
             </FormField>
-          </div>
-        )}
+          )}
 
-        {crear.error !== null && (
-          <p role="alert" className="text-sm text-acento sm:col-span-2 lg:col-span-5">
-            {toMessage(crear.error)}
-          </p>
-        )}
-      </form>
+          <FormField
+            htmlFor="regionNombre"
+            label="Nombre"
+            required
+            hint="Entre 2 y 150 caracteres"
+          >
+            <input
+              id="regionNombre"
+              required
+              minLength={2}
+              maxLength={150}
+              className={inputClass}
+              value={nuevoNombre}
+              onChange={(event) => setNuevoNombre(event.target.value)}
+            />
+          </FormField>
+
+          <FormField
+            htmlFor="regionSlug"
+            label="Slug"
+            hint="Opcional. Se genera del nombre y debe ser unico en toda la plataforma."
+          >
+            <input
+              id="regionSlug"
+              className={inputClass}
+              minLength={2}
+              maxLength={180}
+              pattern={SLUG_PATTERN}
+              title="Solo minusculas, numeros y guiones simples"
+              value={nuevoSlug}
+              onChange={(event) => setNuevoSlug(event.target.value)}
+            />
+          </FormField>
+
+          {crear.error !== null && (
+            <p role="alert" className="text-sm text-acento">
+              {toMessage(crear.error)}
+            </p>
+          )}
+
+          <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={() => setModalAbierto(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" size="md" disabled={crear.isLoading}>
+              {crear.isLoading ? 'Creando...' : 'Agregar'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <div className="overflow-hidden rounded-2xl border border-borde bg-white shadow-sm">
         <div className="flex flex-wrap items-end gap-3 border-b border-borde px-5 py-4">

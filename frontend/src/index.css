@@ -10,3 +10,20 @@
   --color-texto-oscuro: #111111;
   --color-borde: #D9D9D9;
 }
+
+/* Sacudida suave al haber un error de credenciales */
+@keyframes errorSacudida {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-4px);
+  }
+  40%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+.anim-error {
+  animation: errorSacudida 0.35s ease-in-out;
+}

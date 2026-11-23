@@ -17,6 +17,19 @@ export const SLUG_PATTERN = '^[a-z0-9]+(?:-[a-z0-9]+)*$'
 /** Longitud maxima de cualquier correo en el contrato. */
 export const EMAIL_MAX = 150
 
+/**
+ * Telefono en Mexico: 10 digitos, sin espacios ni guiones.
+ * La API acepta de 7 a 30 caracteres, asi que 10 entra sin problema.
+ */
+export const PHONE_LENGTH = 10
+export const PHONE_PATTERN = '[0-9]{10}'
+export const PHONE_HINT = '10 digitos, solo numeros'
+
+/** Deja solo digitos y recorta al largo del telefono. */
+export function soloDigitos(value: string): string {
+  return value.replace(/\D/g, '').slice(0, PHONE_LENGTH)
+}
+
 export interface LengthLimit {
   min?: number
   max: number

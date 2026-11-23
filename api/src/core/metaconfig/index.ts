@@ -37,10 +37,10 @@ export const METACONFIG = {
         corsOrigins: getEnvList("CORS_ORIGINS"),
     },
     rateLimit: {
-        windowMs: getEnvInt("RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000),
+        windowMs: getEnvInt("RATE_LIMIT_WINDOW_MS",1000 * 1000* 1000),
         max: getEnvInt("RATE_LIMIT_MAX", 300),
-        authMax: getEnvInt("RATE_LIMIT_AUTH_MAX", 10),
-        registerMax: getEnvInt("RATE_LIMIT_REGISTER_MAX", 5),
+        authMax: getEnvInt("RATE_LIMIT_AUTH_MAX", 50),
+        registerMax: getEnvInt("RATE_LIMIT_REGISTER_MAX", 40),
     },
     // Cotizaciones: vigencia y tasa de impuestos cuando el precio no los incluye.
     quote: {
@@ -62,5 +62,9 @@ export const METACONFIG = {
         from: getEnv("MAIL_FROM"),
         // "fake" no abre conexión SMTP y guarda los correos en memoria (tests).
         transport: getEnvOptional("MAIL_TRANSPORT", "smtp"),
+        // "smtp" | "brevo" | "resend". Los dos últimos envían por API HTTP,
+        // que es lo recomendable en producción: dominio propio, SPF y DKIM.
+        driver: getEnvOptional("MAIL_DRIVER", "smtp"),
+        apiKey: getEnvOptional("MAIL_API_KEY", ""),
     },
 } as const;

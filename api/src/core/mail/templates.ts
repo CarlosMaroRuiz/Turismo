@@ -76,6 +76,29 @@ function fallbackLink(url: string): string {
     </p>`;
 }
 
+/** Tabla de dos columnas para datos concretos (clave, fecha, total). */
+function detailTable(rows: [string, string][]): string {
+  const filas = rows
+    .map(
+      ([etiqueta, valor]) => `
+        <tr>
+          <td style="padding:10px 14px;background:${BRAND.fondo};font-family:${FONT};font-size:12px;color:${BRAND.suave};width:45%;">
+            ${escapeHtml(etiqueta)}
+          </td>
+          <td style="padding:10px 14px;font-family:${FONT};font-size:14px;font-weight:600;color:${BRAND.texto};">
+            ${escapeHtml(valor)}
+          </td>
+        </tr>`
+    )
+    .join("");
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin-top:12px;border:1px solid ${BRAND.borde};border-radius:10px;overflow:hidden;">
+      ${filas}
+    </table>`;
+}
+
 interface LayoutOptions {
   /** Texto que se ve en la bandeja antes de abrir el correo. */
   preheader: string
@@ -186,9 +209,7 @@ export interface RejectionEmailParams {
   ownerName: string
   commercialName: string
   reason: string
-}
-
-export function renderPartnerRejectionEmail({
+}export function renderPartnerRejectionEmail({
   ownerName,
   commercialName,
   reason,
@@ -220,6 +241,54 @@ export function renderPartnerRejectionEmail({
       eyebrow: "Solicitud revisada",
       eyebrowColor: BRAND.acento,
       title: `Hola, ${ownerName}`,
+      content,
+    }),
+  };
+}
+
+export interface BookingConfirmedEmailParams {
+  partnerName: string
+  packageName: string
+  reference: string
+  departureDate: string
+  seats: number
+  total: number
+  currency: string
+  travelerRef: string
+}
+
+/** Aviso al socio cuando el pago de una reserva queda confirmado. */
+export function renderBookingConfirmedEmail({
+  partnerName,
+  packageName,
+  reference,
+  departureDate,
+  seats,
+  total,
+  currency,
+  travelerRef,
+}: BookingConfirmedEmailParams): { subject: string; html: string } {
+  const content = `
+    <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.7;color:${BRAND.texto};">
+      Se confirmó el pago de una reserva para <strong>${escapeHtml(partnerName)}</strong>.
+    </p>
+    ${detailTable([
+      ["Clave de reserva", reference],
+      ["Paquete", packageName],
+      ["Fecha de salida", departureDate],
+      ["Viajeros", String(seats)],
+      ["Total pagado", `${total.toFixed(2)} ${currency}`],
+      ["Canal del viajero", travelerRef],
+    ])}
+    ${noteBox("El viajero fue atendido por el canal indicado. Coordina con él por ese mismo medio.")}`;
+
+  return {
+    subject: `Reserva pagada ${reference} - ${packageName}`,
+    html: layout({
+      preheader: `Nueva reserva confirmada para ${packageName}.`,
+      eyebrow: "Reserva pagada",
+      eyebrowColor: BRAND.marca,
+      title: `Nueva venta, ${partnerName}`,
       content,
     }),
   };
