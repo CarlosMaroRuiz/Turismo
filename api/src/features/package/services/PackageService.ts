@@ -1,4 +1,8 @@
 import { AppDataSource } from "../../../core/bd/index.js";
+import { activeDepartureHold, departureHolds } from "./departure-holds.js";
+import { Booking } from "../../../core/bd/entities/Booking.js";
+import { availabilityDates } from "../../../core/http/availability-dates.js";
+import type { PackageAvailabilityQuery } from "../dto/availability.dto.js";
 import { Package, PackageStatus } from "../../../core/bd/entities/Package.js";
 import {
   PackageItem,
@@ -169,13 +173,13 @@ export class PackageService {
     };
   }
 
-  private toDeparture(departure: PackageDeparture): DepartureResponse {
+  private toDeparture(departure: PackageDeparture, heldSeats = 0): DepartureResponse {
     return {
       id: departure.id,
       departureDate: departure.departureDate,
       totalSeats: departure.totalSeats,
       soldSeats: departure.soldSeats,
-      availableSeats: Math.max(departure.totalSeats - departure.soldSeats, 0),
+      availableSeats: Math.max(departure.totalSeats - departure.soldSeats - heldSeats, 0),
       adultPrice: Number(departure.adultPrice),
       childPrice:
         departure.childPrice === null ? null : Number(departure.childPrice),
@@ -230,6 +234,7 @@ export class PackageService {
       }),
       this.minPrices([pkg.id]),
     ]);
+    const holds = await departureHolds(AppDataSource.manager, departures.map(({ id }) => id));
 
     return {
       ...this.toSummary(pkg, prices.get(pkg.id) ?? null),
@@ -253,7 +258,7 @@ export class PackageService {
         title: day.title,
         description: day.description,
       })),
-      departures: departures.map((departure) => this.toDeparture(departure)),
+      departures: departures.map((departure) => this.toDeparture(departure, holds.get(departure.id))),
       promotions: promotions.map((promotion) => ({
         id: promotion.id,
         name: promotion.name,
@@ -315,6 +320,47 @@ export class PackageService {
     };
   }
 
+  public async searchAvailability(query: PackageAvailabilityQuery) {
+    const dates = availabilityDates(query.date, query.flexDays);
+    if (dates.length === 0) return { items: [], total: 0 };
+
+    const qb = this.departureRepo.createQueryBuilder("departure")
+      .innerJoin("departure.package", "pkg")
+      .innerJoin("pkg.partner", "partner")
+      .innerJoin("pkg.destinationRegion", "region")
+      .where("departure.departureDate IN (:...dates)", { dates })
+      .andWhere("departure.status = :open", { open: DepartureStatus.OPEN })
+      .andWhere("pkg.status = :published", { published: PackageStatus.PUBLISHED })
+      .andWhere("pkg.destinationRegionId = :regionId", { regionId: query.regionId })
+      .andWhere("partner.status = :partner", { partner: PartnerStatus.ACTIVE })
+      .andWhere("region.status = :region", { region: RegionStatus.ACTIVE })
+      .andWhere("pkg.minTravelers <= :people AND (pkg.maxTravelers IS NULL OR pkg.maxTravelers >= :people)", { people: query.people });
+    const held = qb.subQuery().select("COALESCE(SUM(booking.seats), 0)").from(Booking, "booking")
+      .where("booking.departureId = departure.id").andWhere(activeDepartureHold).getQuery();
+    qb.andWhere(`departure.totalSeats - departure.soldSeats - ${held} >= :people`);
+
+    const { skip, take } = toSkipTake(query);
+    if (query.flexDays > 0) {
+      const days = await qb.select("DATE_FORMAT(departure.departureDate, '%Y-%m-%d')", "date")
+        .groupBy("departure.departureDate")
+        .orderBy("ABS(DATEDIFF(departure.departureDate, :requestedDate))", "ASC")
+        .addOrderBy("departure.departureDate", "ASC")
+        .setParameter("requestedDate", query.date)
+        .getRawMany<{ date: string }>();
+      return { items: days.slice(skip, skip + take), total: days.length };
+    }
+    const [items, total] = await Promise.all([
+      qb.clone().select("departure.id", "departureId")
+        .addSelect("pkg.name", "packageName")
+        .addSelect("DATE_FORMAT(departure.departureDate, '%Y-%m-%d')", "date")
+        .orderBy("departure.id", "ASC")
+        .offset(skip).limit(take)
+        .getRawMany<{ departureId: string; packageName: string; date: string }>(),
+      qb.getCount(),
+    ]);
+    return { items, total };
+  }
+
   /** Paquetes del socio autenticado (cualquier estado); el admin ve todos. */
   public async listMine(
     actor: JwtUserPayload,
@@ -359,7 +405,11 @@ export class PackageService {
       actor !== undefined &&
       (actor.role === RoleCode.SUPER_USER || actor.partnerId === pkg.partnerId);
 
-    if (pkg.status !== PackageStatus.PUBLISHED && !includeUnpublished) {
+    if (!includeUnpublished && (
+      pkg.status !== PackageStatus.PUBLISHED ||
+      pkg.partner.status !== PartnerStatus.ACTIVE ||
+      pkg.destinationRegion.status !== RegionStatus.ACTIVE
+    )) {
       throw new NotFoundError("Paquete no encontrado", "PACKAGE_NOT_FOUND");
     }
 
@@ -681,27 +731,29 @@ export class PackageService {
     const pkg = await this.findPackageOrFail(packageId);
     this.assertCanManage(pkg, actor);
 
-    const departure = await this.departureRepo.findOne({
-      where: { id: departureId, packageId: pkg.id },
+    return AppDataSource.transaction("READ COMMITTED", async (manager) => {
+      const departure = await manager.findOne(PackageDeparture, {
+        where: { id: departureId, packageId: pkg.id },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!departure) {
+        throw new NotFoundError("Salida no encontrada", "DEPARTURE_NOT_FOUND");
+      }
+
+      const heldSeats = (await departureHolds(manager, [departure.id])).get(departure.id) ?? 0;
+      if (dto.totalSeats !== undefined && dto.totalSeats < departure.soldSeats + heldSeats) {
+        throw new BadRequestError(
+          "El cupo no puede ser menor que los lugares vendidos y apartados",
+          "SEATS_BELOW_SOLD"
+        );
+      }
+
+      if (dto.totalSeats !== undefined) departure.totalSeats = dto.totalSeats;
+      if (dto.adultPrice !== undefined) departure.adultPrice = dto.adultPrice;
+      if (dto.childPrice !== undefined) departure.childPrice = dto.childPrice;
+      if (dto.status !== undefined) departure.status = dto.status;
+
+      return this.toDeparture(await manager.save(departure), heldSeats);
     });
-
-    if (!departure) {
-      throw new NotFoundError("Salida no encontrada", "DEPARTURE_NOT_FOUND");
-    }
-
-    if (dto.totalSeats !== undefined && dto.totalSeats < departure.soldSeats) {
-      throw new BadRequestError(
-        "El cupo no puede ser menor que los lugares ya vendidos",
-        "SEATS_BELOW_SOLD"
-      );
-    }
-
-    if (dto.totalSeats !== undefined) departure.totalSeats = dto.totalSeats;
-    if (dto.adultPrice !== undefined) departure.adultPrice = dto.adultPrice;
-    if (dto.childPrice !== undefined) departure.childPrice = dto.childPrice;
-    if (dto.status !== undefined) departure.status = dto.status;
-
-    const saved = await this.departureRepo.save(departure);
-    return this.toDeparture(saved);
   }
 }

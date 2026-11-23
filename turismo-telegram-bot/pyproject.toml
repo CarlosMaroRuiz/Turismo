@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "turismo-telegram-bot"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "langgraph>=1,<2",
+  "langchain-deepseek>=1.2,<2",
+  "pydantic-settings>=2,<3",
+  "uvicorn>=0.33,<1",
+  "tzdata",
+]
+
+[tool.setuptools.packages.find]
+include = ["turismo_bot*"]

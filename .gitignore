@@ -41,6 +41,9 @@ pnpm-debug.log*
 .eslintcache
 coverage/
 
+# --- Grafo local generado ---
+/graphify-out/
+
 # --- Editores / sistema ---
 .vscode/*
 !.vscode/extensions.json

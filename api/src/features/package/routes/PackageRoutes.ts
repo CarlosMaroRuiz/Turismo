@@ -12,6 +12,7 @@ import {
   updatePackageSchema,
 } from "../dto/index.js";
 import { PackageController } from "../controller/PackageController.js";
+import { packageAvailabilityQuerySchema } from "../dto/availability.dto.js";
 
 const listPackagesQuerySchema = paginationSchema.extend({
   regionId: z.string().uuid().optional(),
@@ -27,6 +28,7 @@ export class PackageRoutes extends BaseRoutes<PackageController> {
   protected initRoutes(): void {
     // Catálogo público: solo paquetes publicados de socios activos
     this.router.get("/", this.controller.list);
+    this.router.get("/availability", this.controller.availability);
 
     // Gestión del socio (cualquier estado). Debe ir antes de /:id
     this.router.get(
@@ -80,6 +82,13 @@ export class PackageRoutes extends BaseRoutes<PackageController> {
     );
 
     registerRoutes("Paquetes", [
+      {
+        method: "get",
+        path: "/api/v1/packages/availability",
+        summary: "Salidas con cupo para el grupo en la fecha solicitada y fechas cercanas",
+        auth: "none",
+        query: packageAvailabilityQuerySchema,
+      },
       {
         method: "get",
         path: "/api/v1/packages",

@@ -18,6 +18,9 @@ export class Quote {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
+  @Column({ name: "client_id", type: "varchar", length: 60, nullable: true })
+  clientId: string | null;
+
   /** Referencia corta para mostrar al viajero, por ejemplo "QT-8F3A21". */
   @Index("uq_quotes_reference", { unique: true })
   @Column({ type: "varchar", length: 20 })
