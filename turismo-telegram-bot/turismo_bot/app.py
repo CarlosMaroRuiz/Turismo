@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager, suppress
 from hmac import compare_digest
 import json
 import os
+import traceback
 import logging
 import re
 
@@ -149,7 +150,7 @@ class Bot:
 
         # Primer mensaje despues de /start: es el nombre del viajero.
         if session.get("awaiting_name") and action == "" and text:
-            posible = nombre_limpio(text)
+            posible = self.nombre_limpio(text)
             parece_busqueda = bool(re.search(
                 r"\b(hotel|hoteles|paquete|paquetes|experiencia|tour|busco|quiero ir|reservar|viajar)\b",
                 posible, re.IGNORECASE,
@@ -244,7 +245,7 @@ class Bot:
                 try:
                     await self.process(update)
                 except Exception as exc:
-                    log.warning("Reintento de actualización (%s)", type(exc).__name__)
+                    log.warning("Reintento de actualización (%s): %s", type(exc).__name__, traceback.format_exc())
                     self.store.retry(update)
 
             due = self.store.next_booking()
