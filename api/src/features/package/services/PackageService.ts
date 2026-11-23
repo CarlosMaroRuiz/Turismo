@@ -1,4 +1,5 @@
 import { AppDataSource } from "../../../core/bd/index.js";
+import { departureHolds } from "./departure-holds.js";
 import { Package, PackageStatus } from "../../../core/bd/entities/Package.js";
 import {
   PackageItem,
@@ -168,13 +169,13 @@ export class PackageService {
     };
   }
 
-  private toDeparture(departure: PackageDeparture): DepartureResponse {
+  private toDeparture(departure: PackageDeparture, heldSeats = 0): DepartureResponse {
     return {
       id: departure.id,
       departureDate: departure.departureDate,
       totalSeats: departure.totalSeats,
       soldSeats: departure.soldSeats,
-      availableSeats: Math.max(departure.totalSeats - departure.soldSeats, 0),
+      availableSeats: Math.max(departure.totalSeats - departure.soldSeats - heldSeats, 0),
       adultPrice: Number(departure.adultPrice),
       childPrice:
         departure.childPrice === null ? null : Number(departure.childPrice),
@@ -229,6 +230,7 @@ export class PackageService {
       }),
       this.minPrices([pkg.id]),
     ]);
+    const holds = await departureHolds(AppDataSource.manager, departures.map(({ id }) => id));
 
     return {
       ...this.toSummary(pkg, prices.get(pkg.id) ?? null),
@@ -252,7 +254,7 @@ export class PackageService {
         title: day.title,
         description: day.description,
       })),
-      departures: departures.map((departure) => this.toDeparture(departure)),
+      departures: departures.map((departure) => this.toDeparture(departure, holds.get(departure.id))),
       promotions: promotions.map((promotion) => ({
         id: promotion.id,
         name: promotion.name,
@@ -358,7 +360,11 @@ export class PackageService {
       actor !== undefined &&
       (actor.role === RoleCode.SUPER_USER || actor.partnerId === pkg.partnerId);
 
-    if (pkg.status !== PackageStatus.PUBLISHED && !includeUnpublished) {
+    if (!includeUnpublished && (
+      pkg.status !== PackageStatus.PUBLISHED ||
+      pkg.partner.status !== PartnerStatus.ACTIVE ||
+      pkg.destinationRegion.status !== RegionStatus.ACTIVE
+    )) {
       throw new NotFoundError("Paquete no encontrado", "PACKAGE_NOT_FOUND");
     }
 
@@ -678,27 +684,29 @@ export class PackageService {
     const pkg = await this.findPackageOrFail(packageId);
     this.assertCanManage(pkg, actor);
 
-    const departure = await this.departureRepo.findOne({
-      where: { id: departureId, packageId: pkg.id },
+    return AppDataSource.transaction("READ COMMITTED", async (manager) => {
+      const departure = await manager.findOne(PackageDeparture, {
+        where: { id: departureId, packageId: pkg.id },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!departure) {
+        throw new NotFoundError("Salida no encontrada", "DEPARTURE_NOT_FOUND");
+      }
+
+      const heldSeats = (await departureHolds(manager, [departure.id])).get(departure.id) ?? 0;
+      if (dto.totalSeats !== undefined && dto.totalSeats < departure.soldSeats + heldSeats) {
+        throw new BadRequestError(
+          "El cupo no puede ser menor que los lugares vendidos y apartados",
+          "SEATS_BELOW_SOLD"
+        );
+      }
+
+      if (dto.totalSeats !== undefined) departure.totalSeats = dto.totalSeats;
+      if (dto.adultPrice !== undefined) departure.adultPrice = dto.adultPrice;
+      if (dto.childPrice !== undefined) departure.childPrice = dto.childPrice;
+      if (dto.status !== undefined) departure.status = dto.status;
+
+      return this.toDeparture(await manager.save(departure), heldSeats);
     });
-
-    if (!departure) {
-      throw new NotFoundError("Salida no encontrada", "DEPARTURE_NOT_FOUND");
-    }
-
-    if (dto.totalSeats !== undefined && dto.totalSeats < departure.soldSeats) {
-      throw new BadRequestError(
-        "El cupo no puede ser menor que los lugares ya vendidos",
-        "SEATS_BELOW_SOLD"
-      );
-    }
-
-    if (dto.totalSeats !== undefined) departure.totalSeats = dto.totalSeats;
-    if (dto.adultPrice !== undefined) departure.adultPrice = dto.adultPrice;
-    if (dto.childPrice !== undefined) departure.childPrice = dto.childPrice;
-    if (dto.status !== undefined) departure.status = dto.status;
-
-    const saved = await this.departureRepo.save(departure);
-    return this.toDeparture(saved);
   }
 }

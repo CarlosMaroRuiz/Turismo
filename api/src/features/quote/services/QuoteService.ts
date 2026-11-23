@@ -20,6 +20,9 @@ import {
   SlotStatus,
 } from "../../../core/bd/entities/ExperienceSlot.js";
 import { Quote } from "../../../core/bd/entities/Quote.js";
+import { RegionStatus } from "../../../core/bd/entities/Region.entity.js";
+import { departureHolds } from "../../package/services/departure-holds.js";
+import { MAX_AVAILABILITY_NIGHTS } from "../../hotel/services/HotelService.js";
 import {
   BadRequestError,
   GoneError,
@@ -114,7 +117,7 @@ export class QuoteService {
   ): Promise<QuoteLineResponse> {
     const departure = await this.departureRepo.findOne({
       where: { id: item.departureId },
-      relations: { package: { partner: true } },
+      relations: { package: { partner: true, destinationRegion: true } },
     });
 
     if (!departure) {
@@ -123,7 +126,10 @@ export class QuoteService {
 
     const pkg: Package = departure.package;
 
-    if (pkg.status !== PackageStatus.PUBLISHED) {
+    if (
+      pkg.status !== PackageStatus.PUBLISHED ||
+      pkg.destinationRegion.status !== RegionStatus.ACTIVE
+    ) {
       throw new BadRequestError(
         "El paquete no está publicado",
         "PACKAGE_NOT_AVAILABLE"
@@ -138,9 +144,14 @@ export class QuoteService {
     }
 
     const travelers = item.adults + item.children;
-    const available = departure.totalSeats - departure.soldSeats;
+    const holds = await departureHolds(AppDataSource.manager, [departure.id]);
+    const available = departure.totalSeats - departure.soldSeats - (holds.get(departure.id) ?? 0);
 
-    if (departure.status !== DepartureStatus.OPEN || available < travelers) {
+    if (
+      departure.status !== DepartureStatus.OPEN ||
+      departure.departureDate < new Date().toISOString().slice(0, 10) ||
+      available < travelers
+    ) {
       throw new BadRequestError(
         "No hay cupo suficiente para esta salida",
         "INSUFFICIENT_AVAILABILITY"
@@ -223,6 +234,13 @@ export class QuoteService {
       );
     }
 
+    if (nights > MAX_AVAILABILITY_NIGHTS || item.checkIn < new Date().toISOString().slice(0, 10)) {
+      throw new BadRequestError(
+        "La estancia debe comenzar hoy o después y durar como máximo 30 noches",
+        "INVALID_DATE_RANGE"
+      );
+    }
+
     const dates = eachNight(item.checkIn, item.checkOut);
     const rows = await this.inventoryRepo.find({
       where: { roomTypeId: roomType.id, date: In(dates) },
@@ -301,7 +319,11 @@ export class QuoteService {
     const travelers = item.adults + item.children;
     const remaining = slot.capacity - slot.booked;
 
-    if (slot.status !== SlotStatus.OPEN || remaining < travelers) {
+    if (
+      slot.status !== SlotStatus.OPEN ||
+      slot.date < new Date().toISOString().slice(0, 10) ||
+      remaining < travelers
+    ) {
       throw new BadRequestError(
         "No hay lugares suficientes en este turno",
         "INSUFFICIENT_AVAILABILITY"
@@ -338,17 +360,28 @@ export class QuoteService {
     };
   }
 
-  public async create(dto: CreateQuoteDto): Promise<QuoteResponse> {
+  public async create(dto: CreateQuoteDto, clientId: string): Promise<QuoteResponse> {
     const lines: QuoteLineResponse[] = [];
+    const selections = new Set<string>();
 
     for (const item of dto.items) {
-      if (item.type === "package_departure") {
-        lines.push(await this.pricePackageDeparture(item));
-      } else if (item.type === "room_stay") {
-        lines.push(await this.priceRoomStay(item));
-      } else {
-        lines.push(await this.priceExperienceSlot(item));
+      const line = item.type === "package_departure"
+        ? await this.pricePackageDeparture(item)
+        : item.type === "room_stay"
+          ? await this.priceRoomStay(item)
+          : await this.priceExperienceSlot(item);
+      const keys = item.type === "room_stay"
+        ? eachNight(item.checkIn, item.checkOut)
+          .map((date) => `room:${item.roomTypeId}:${date}`)
+        : [item.type === "package_departure" ? `departure:${item.departureId}` : `slot:${item.slotId}`];
+      if (keys.some((key) => selections.has(key))) {
+        throw new BadRequestError(
+          "Une en una sola selección los servicios que comparten el mismo inventario",
+          "DUPLICATE_QUOTE_INVENTORY"
+        );
       }
+      keys.forEach((key) => selections.add(key));
+      lines.push(line);
     }
 
     const subtotal = round2(lines.reduce((sum, line) => sum + line.subtotal, 0));
@@ -362,6 +395,7 @@ export class QuoteService {
     );
 
     const quote = this.quoteRepo.create({
+      clientId,
       reference: this.generateReference(),
       currency: "MXN",
       subtotal,
@@ -377,10 +411,10 @@ export class QuoteService {
     return this.toResponse(saved);
   }
 
-  public async getById(quoteId: string): Promise<QuoteResponse> {
+  public async getById(quoteId: string, clientId: string): Promise<QuoteResponse> {
     const quote = await this.quoteRepo.findOne({ where: { id: quoteId } });
 
-    if (!quote) {
+    if (!quote || (quote.clientId !== null && quote.clientId !== clientId)) {
       throw new NotFoundError("Cotización no encontrada", "QUOTE_NOT_FOUND");
     }
 

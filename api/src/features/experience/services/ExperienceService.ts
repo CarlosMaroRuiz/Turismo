@@ -278,7 +278,11 @@ export class ExperienceService {
       (actor.role === RoleCode.SUPER_USER ||
         actor.partnerId === experience.partnerId);
 
-    if (!experience.isActive && !includeInactive) {
+    if (!includeInactive && (
+      !experience.isActive ||
+      experience.partner.status !== PartnerStatus.ACTIVE ||
+      experience.region.status !== RegionStatus.ACTIVE
+    )) {
       throw new NotFoundError(
         "Experiencia no encontrada",
         "EXPERIENCE_NOT_FOUND"

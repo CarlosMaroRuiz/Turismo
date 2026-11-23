@@ -9,7 +9,7 @@ export class QuoteController {
 
   public create = async (req: Request, res: Response): Promise<void> => {
     const dto = createQuoteSchema.parse(req.body ?? {});
-    const data = await this.quoteService.create(dto);
+    const data = await this.quoteService.create(dto, req.service!.clientId);
 
     ApiResponse.created(
       res,
@@ -31,7 +31,7 @@ export class QuoteController {
       );
     }
 
-    const data = await this.quoteService.getById(id);
+    const data = await this.quoteService.getById(id, req.service!.clientId);
     ApiResponse.ok(res, data, "Cotización obtenida correctamente");
   };
 }

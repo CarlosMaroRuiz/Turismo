@@ -31,6 +31,7 @@ export class App {
     this.instance.use(RequestContext.handle);
     this.instance.use(SecurityMiddleware.headers);
     this.instance.use(SecurityMiddleware.cors);
+    this.instance.use("/api/v1/bookings/paypal/webhook", express.raw({ type: "application/json", limit: "100kb" }));
     this.instance.use(express.json({ limit: "100kb" }));
     this.instance.use(express.urlencoded({ extended: true, limit: "100kb" }));
     this.instance.use(RateLimit.global);

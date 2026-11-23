@@ -75,3 +75,4 @@ Todos los comandos se ejecutan desde la raíz del proyecto utilizando `npm run <
 * [Guía de Migraciones (Creación y control de tablas)](https://www.google.com/search?q=./docs/migraciones.md)
 * [Guía de Seeders (Creación y sincronización)](https://www.google.com/search?q=./docs/seeder.md)
 * [Guía de Pruebas E2E (Validación de endpoints)](https://www.google.com/search?q=./docs/pruebas-e2e.md)
+* [Reservas de paquetes y configuración de PayPal](./docs/reservas-paypal.md)

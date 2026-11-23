@@ -47,6 +47,13 @@ export const METACONFIG = {
         ttlMinutes: getEnvInt("QUOTE_TTL_MINUTES", 15),
         taxRate: Number(getEnvOptional("QUOTE_TAX_RATE", "0.16")),
     },
+    paypal: {
+        mode: getEnvOptional("PAYPAL_MODE", "sandbox"),
+        clientId: getEnvOptional("PAYPAL_CLIENT_ID", ""),
+        secret: getEnvOptional("PAYPAL_CLIENT_SECRET", ""),
+        webhookId: getEnvOptional("PAYPAL_WEBHOOK_ID", ""),
+        publicApiUrl: getEnvOptional("PAYPAL_PUBLIC_API_URL", ""),
+    },
     mail: {
         host: getEnv("MAIL_HOST"),
         port: getEnvInt("MAIL_PORT"), // 465

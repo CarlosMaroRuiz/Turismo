@@ -8,6 +8,7 @@ import { PackageRoutes } from "../../features/package/routes/PackageRoutes.js";
 import { HotelRoutes } from "../../features/hotel/routes/HotelRoutes.js";
 import { ExperienceRoutes } from "../../features/experience/routes/ExperienceRoutes.js";
 import { QuoteRoutes } from "../../features/quote/routes/QuoteRoutes.js";
+import { BookingRoutes } from "../../features/booking/routes/BookingRoutes.js";
 import { buildOpenApiDocument } from "../http/openapi/index.js";
 
 export class ApiRouter {
@@ -33,5 +34,6 @@ export class ApiRouter {
     this.router.use("/hotels", new HotelRoutes().router);
     this.router.use("/experiences", new ExperienceRoutes().router);
     this.router.use("/quotes", new QuoteRoutes().router);
+    this.router.use("/bookings", new BookingRoutes().router);
   }
 }

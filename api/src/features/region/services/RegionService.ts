@@ -81,7 +81,8 @@ export class RegionService {
 
     if (filters.search) {
       qb.andWhere(
-        "(LOWER(region.name) LIKE :search OR LOWER(region.slug) LIKE :search)",
+        "(LOWER(region.name) LIKE :search OR LOWER(region.slug) LIKE :search " +
+          "OR JSON_SEARCH(LOWER(CAST(region.aliases AS CHAR)), 'one', :search) IS NOT NULL)",
         { search: `%${filters.search.toLowerCase()}%` }
       );
     }

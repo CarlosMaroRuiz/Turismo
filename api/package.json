@@ -19,6 +19,7 @@
     "test:prepare": "node scripts/test-db.mjs",
     "test": "npm run build:test && npm run test:prepare && node dist-test/test/e2e/api.test.js",
     "test:flow": "npm run build:test && npm run test:prepare && node dist-test/test/flow/agencia-paquetes.flow.test.js && node dist-test/test/flow/agente-cotizacion.flow.test.js",
+    "test:booking": "npm run build:test && npm run test:prepare && node dist-test/test/flow/booking-paypal.flow.test.js",
     "test:e2e": "npm test"
   },
   "keywords": [],

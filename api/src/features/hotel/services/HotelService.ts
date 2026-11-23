@@ -32,7 +32,7 @@ import type {
 
 const HOTEL_CATEGORY_CODE = "hotel";
 const MAX_INVENTORY_RANGE_DAYS = 370;
-const MAX_AVAILABILITY_NIGHTS = 30;
+export const MAX_AVAILABILITY_NIGHTS = 30;
 /** Tope de tipos de habitación que se evalúan por búsqueda de disponibilidad. */
 const MAX_AVAILABILITY_CANDIDATES = 200;
 
