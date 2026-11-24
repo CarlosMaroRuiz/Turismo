@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 
 import { Badge } from '@common/components/Badge'
 import { Button } from '@common/Buttons'
@@ -109,7 +109,7 @@ export default function RoomListPage() {
       <Modal
         open={vista !== null}
         title={titulo}
-        size={vista?.tipo === 'inventario' ? 'xl' : 'md'}
+        size={vista?.tipo === 'inventario' ? '2xl' : 'md'}
         description="El inventario manda sobre el precio base: si una fecha tiene tarifa propia, esa se cobra."
         onClose={cerrar}
       >

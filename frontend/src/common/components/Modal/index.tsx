@@ -1,21 +1,22 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+﻿import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 import { cn } from '@lib/cn'
 
-type ModalSize = 'md' | 'lg' | 'xl'
+type ModalSize = 'md' | 'lg' | 'xl' | '2xl'
 
 const TAMANOS: Record<ModalSize, string> = {
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-6xl',
 }
 
 interface ModalProps {
   open: boolean
   title: string
   description?: string
-  /** Ancho del dialogo: `md` 512px, `lg` 672px, `xl` 896px. */
+  /** Ancho del dialogo: `md` 512px, `lg` 672px, `xl` 896px, `2xl` 1152px. */
   size?: ModalSize
   /** Se llama al cerrar con la X, con Escape o con clic fuera. */
   onClose: () => void

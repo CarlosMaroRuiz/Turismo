@@ -135,13 +135,16 @@ Cierra sesión y entra como `playa-azul@turismo.test`. Al entrar cae directo en 
 **b. Habitaciones**
 
 - Tarjetas con foto, capacidad, unidades, precio y estado.
-- Abre **Inventario** en "Doble vista mar":
-  - El modal grande tiene el formulario a la izquierda y el **calendario** a la
+- Abre **Inventario** en "Suite familiar":
+  - El modal ancho tiene el formulario a la izquierda y el **calendario** a la
     derecha.
-  - Los días con tarifa propia se ven en verde; los cerrados en rosa; los que
-    usan la base en blanco.
-  - Selecciona un rango con clic, cambia unidades y tarifa, y **Aplicar al
-    rango**. Los días cambian de color al instante.
+  - Arriba del formulario, el recuadro verde resume el rango: noches, unidades,
+    tarifa e **ingreso estimado**.
+  - Los días con tarifa propia se ven con borde verde; los cerrados en rosa;
+    los que usan la base en blanco; los del rango elegido se pintan de verde
+    sólido.
+  - Hay atajos: próximos 7 días, esta semana, mes completo y mes siguiente.
+  - Selecciona dos días, cambia unidades y tarifa, y **Aplicar al rango**.
   - Marca **Cerrar estas fechas** para mostrar cómo se bloquea una fecha.
 
 > "El inventario manda sobre el precio base. Si no hay fila para un día, se
