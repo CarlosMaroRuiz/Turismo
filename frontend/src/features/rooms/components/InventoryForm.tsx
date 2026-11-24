@@ -212,6 +212,21 @@ export function InventoryForm({ room, isSubmitting, error, onSubmit, onCancel }:
           </p>
         </div>
 
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-borde bg-white px-3 py-2 text-[11px] text-texto-oscuro/60">
+          <span>
+            Promedio <strong className="text-texto-oscuro">{precio.format(resumen.promedio)}</strong>
+          </span>
+          <span className="h-3 w-px bg-borde" />
+          <span>
+            <strong className="text-texto-oscuro">{resumen.cerrados}</strong> cerrado
+            {resumen.cerrados === 1 ? '' : 's'}
+          </span>
+          <span className="h-3 w-px bg-borde" />
+          <span>
+            <strong className="text-texto-oscuro">{resumen.propias}</strong> con tarifa
+          </span>
+        </div>
+
         <div className="flex flex-col gap-4">
           <details className="rounded-xl border border-borde bg-white px-3 py-2">
             <summary className="cursor-pointer text-xs font-semibold text-texto-oscuro/60">
@@ -358,17 +373,7 @@ export function InventoryForm({ room, isSubmitting, error, onSubmit, onCancel }:
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-[11px]">
-            <span className="rounded-full bg-marca/[0.08] px-2.5 py-1 font-semibold text-marca">
-              {precio.format(resumen.promedio)} promedio
-            </span>
-            <span className="rounded-full bg-acento/10 px-2.5 py-1 font-semibold text-acento">
-              {resumen.cerrados} cerrado{resumen.cerrados === 1 ? '' : 's'}
-            </span>
-            <span className="rounded-full bg-fondo-claro px-2.5 py-1 font-semibold text-texto-oscuro/60">
-              {resumen.propias} con tarifa propia
-            </span>
-          </div>
+
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
