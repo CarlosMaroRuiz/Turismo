@@ -1,4 +1,4 @@
-import { DataSource } from "typeorm";
+﻿import { DataSource } from "typeorm";
 import { Seed } from "../utils/seed.decorator.js";
 import type { Seeder } from "../types/index.js";
 import { METACONFIG } from "../../../metaconfig/index.js";
@@ -42,6 +42,8 @@ interface RoomSeed {
   amenities: string[];
   /** Id de picsum para la foto de la habitacion. */
   foto: number;
+  /** Foto propia: si viene, manda sobre el id de picsum. */
+  fotoUrl?: string;
 }
 
 interface HotelSeed {
@@ -172,6 +174,14 @@ export class PlayaYucatanSeeder implements Seeder {
   /** Una sola contrasena para todas las cuentas de prueba. */
   private static readonly PASSWORD = "Turismo123!";
 
+  /** Fotos reales de habitacion, para que ningun cuarto quede con un paisaje. */
+  private static readonly FOTOS_HABITACION = [
+    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+    "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+    "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+    "https://plus.unsplash.com/premium_photo-1675616563084-63d1f129623d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+  ];
+
   private static readonly HOTELES: HotelSeed[] = [
     {
       slug: "temptation-cancun-resort",
@@ -223,6 +233,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 6,
           basePrice: 1800,
           foto: 1061,
+          fotoUrl: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "desayuno", "alberca", "vista al mar"],
         },
         {
@@ -233,6 +244,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 3,
           basePrice: 2900,
           foto: 1050,
+          fotoUrl: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "desayuno", "alberca", "jacuzzi"],
         },
         {
@@ -243,6 +255,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 10,
           basePrice: 1200,
           foto: 1015,
+          fotoUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "abanico", "baño privado"],
         },
         {
@@ -253,6 +266,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 6,
           basePrice: 1650,
           foto: 1065,
+          fotoUrl: "https://plus.unsplash.com/premium_photo-1675616563084-63d1f129623d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "desayuno", "jardín", "aire acondicionado"],
         },
         {
@@ -263,6 +277,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 4,
           basePrice: 3900,
           foto: 1043,
+          fotoUrl: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "desayuno", "alberca", "cocina", "vista al mar"],
         },
         {
@@ -273,6 +288,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 2,
           basePrice: 6500,
           foto: 1048,
+          fotoUrl: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "desayuno", "jacuzzi", "cocina", "terraza", "room service"],
         },
         {
@@ -283,6 +299,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 2,
           basePrice: 8900,
           foto: 1060,
+          fotoUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "alberca privada", "cocina", "jardín", "estacionamiento"],
         },
         {
@@ -293,6 +310,7 @@ export class PlayaYucatanSeeder implements Seeder {
           totalUnits: 1,
           basePrice: 11500,
           foto: 1053,
+          fotoUrl: "https://plus.unsplash.com/premium_photo-1675616563084-63d1f129623d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
           amenities: ["wifi", "jacuzzi", "terraza", "vista al mar", "room service"],
         },
       ],
@@ -1167,13 +1185,24 @@ export class PlayaYucatanSeeder implements Seeder {
     }
   }
 
+  /** Foto propia si la trae; si no, una de las cuatro, estable por nombre. */
+  private fotoDeHabitacion(cuarto: RoomSeed): string {
+    if (cuarto.fotoUrl) {
+      return cuarto.fotoUrl;
+    }
+
+    const fotos = PlayaYucatanSeeder.FOTOS_HABITACION;
+    const suma = [...cuarto.name].reduce((total, letra) => total + letra.charCodeAt(0), 0);
+    return fotos[suma % fotos.length] ?? fotos[0] ?? "";
+  }
+
   private async ensureRoomType(
     dataSource: DataSource,
     partnerId: string,
     cuarto: RoomSeed
   ): Promise<RoomType> {
     const repo = dataSource.getRepository(RoomType);
-    const imagen = `https://picsum.photos/id/${cuarto.foto}/1200/800`;
+    const imagen = this.fotoDeHabitacion(cuarto);
     const existente = await repo.findOneBy({ partnerId, name: cuarto.name });
 
     if (existente) {

@@ -1,4 +1,4 @@
-import { DataSource } from "typeorm";
+﻿import { DataSource } from "typeorm";
 import { Seed } from "../utils/seed.decorator.js";
 import type { Seeder } from "../types/index.js";
 import { METACONFIG } from "../../../metaconfig/index.js";
@@ -88,8 +88,8 @@ export class DemoProvidersSeeder implements Seeder {
       basePrice: 1500,
       amenities: ["wifi", "desayuno", "aire acondicionado", "alberca"],
       images: [
-        "https://picsum.photos/seed/hotel-doble-1/1200/800",
-        "https://picsum.photos/seed/hotel-doble-2/1200/800",
+        "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
+        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D",
       ],
     });
 
@@ -101,7 +101,7 @@ export class DemoProvidersSeeder implements Seeder {
       totalUnits: 3,
       basePrice: 2400,
       amenities: ["wifi", "desayuno", "cocina", "vista al mar"],
-      images: ["https://picsum.photos/seed/hotel-suite-1/1200/800"],
+      images: ["https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D"],
     });
 
     await this.seedInventory(dataSource, doubleRoom, 1500, 4);
@@ -276,6 +276,11 @@ export class DemoProvidersSeeder implements Seeder {
     const existing = await repo.findOneBy({ partnerId, name: data.name });
 
     if (existing) {
+      // Las fotos del demo se actualizan si el catalogo cambio.
+      if (data.images[0] !== undefined && existing.images[0] !== data.images[0]) {
+        existing.images = data.images;
+        return repo.save(existing);
+      }
       return existing;
     }
 
