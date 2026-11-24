@@ -60,3 +60,4 @@ Desktop.ini
 *.p12
 *.pfx
 credentials*.json
+.tmp-e2e/
