@@ -213,34 +213,39 @@ export function InventoryForm({ room, isSubmitting, error, onSubmit, onCancel }:
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <FormField htmlFor="inventarioDesde" label="Desde" required>
-              <input
-                id="inventarioDesde"
-                type="date"
-                className={inputClass}
-                required
-                value={desde}
-                onChange={(event) => setDesde(event.target.value)}
-              />
-            </FormField>
+          <details className="rounded-xl border border-borde bg-white px-3 py-2">
+            <summary className="cursor-pointer text-xs font-semibold text-texto-oscuro/60">
+              Escribir las fechas exactas
+            </summary>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <FormField htmlFor="inventarioDesde" label="Desde" required>
+                <input
+                  id="inventarioDesde"
+                  type="date"
+                  className={inputClass}
+                  required
+                  value={desde}
+                  onChange={(event) => setDesde(event.target.value)}
+                />
+              </FormField>
 
-            <FormField
-              htmlFor="inventarioHasta"
-              label="Hasta"
-              required
-              error={rangoInvalido ? 'Debe ser igual o posterior.' : undefined}
-            >
-              <input
-                id="inventarioHasta"
-                type="date"
-                className={inputClass}
+              <FormField
+                htmlFor="inventarioHasta"
+                label="Hasta"
                 required
-                value={hasta}
-                onChange={(event) => setHasta(event.target.value)}
-              />
-            </FormField>
-          </div>
+                error={rangoInvalido ? 'Debe ser igual o posterior.' : undefined}
+              >
+                <input
+                  id="inventarioHasta"
+                  type="date"
+                  className={inputClass}
+                  required
+                  value={hasta}
+                  onChange={(event) => setHasta(event.target.value)}
+                />
+              </FormField>
+            </div>
+          </details>
 
           <FormField
             htmlFor="inventarioUnidades"
@@ -321,100 +326,111 @@ export function InventoryForm({ room, isSubmitting, error, onSubmit, onCancel }:
 
       <div className="flex flex-col overflow-hidden rounded-2xl border border-borde bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borde px-4 py-3">
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setMes(sumarMes(mes, -1))}
-              className="rounded-lg border border-borde px-2 py-1 text-sm text-texto-oscuro/60 transition-colors hover:bg-fondo-claro"
-              aria-label="Mes anterior"
-            >
-              ←
-            </button>
-            <span className="min-w-[150px] text-center text-sm font-bold text-texto-oscuro">
-              {nombreMes(mes)}
-            </span>
-            <button
-              type="button"
-              onClick={() => setMes(sumarMes(mes, 1))}
-              className="rounded-lg border border-borde px-2 py-1 text-sm text-texto-oscuro/60 transition-colors hover:bg-fondo-claro"
-              aria-label="Mes siguiente"
-            >
-              →
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMes(mesDe(hoy))
-                aplicarAtajo(hoy, hoy)
-              }}
-              className="ml-1 rounded-lg bg-fondo-claro px-2.5 py-1 text-xs font-semibold text-marca"
-            >
-              Hoy
-            </button>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-texto-oscuro">{nombreMes(mes)}</h3>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMes(sumarMes(mes, -1))}
+                className="rounded-full p-1 text-texto-oscuro/50 transition-colors hover:bg-fondo-claro hover:text-texto-oscuro"
+                aria-label="Mes anterior"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => setMes(sumarMes(mes, 1))}
+                className="rounded-full p-1 text-texto-oscuro/50 transition-colors hover:bg-fondo-claro hover:text-texto-oscuro"
+                aria-label="Mes siguiente"
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMes(mesDe(hoy))
+                  aplicarAtajo(hoy, hoy)
+                }}
+                className="ml-1 rounded-full border border-borde px-3 py-1 text-xs font-semibold text-texto-oscuro transition-colors hover:border-marca/40 hover:text-marca"
+              >
+                Hoy
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-texto-oscuro/55">
-            <span className="rounded-full bg-marca/8 px-2 py-0.5 font-semibold text-marca">
-              {resumen.promedio ? `Promedio ${precio.format(resumen.promedio)}` : 'Sin tarifas'}
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="rounded-full bg-marca/[0.08] px-2.5 py-1 font-semibold text-marca">
+              {precio.format(resumen.promedio)} promedio
             </span>
-            <span className="rounded-full bg-acento/10 px-2 py-0.5 font-semibold text-acento">
+            <span className="rounded-full bg-acento/10 px-2.5 py-1 font-semibold text-acento">
               {resumen.cerrados} cerrado{resumen.cerrados === 1 ? '' : 's'}
             </span>
-            <span className="rounded-full bg-fondo-claro px-2 py-0.5 font-semibold text-texto-oscuro/60">
+            <span className="rounded-full bg-fondo-claro px-2.5 py-1 font-semibold text-texto-oscuro/60">
               {resumen.propias} con tarifa propia
             </span>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 px-4 py-2.5">
-          <button
-            type="button"
-            onClick={() => {
-              const inicio = new Date()
-              const fin = new Date()
-              fin.setDate(inicio.getDate() + 6)
-              aplicarAtajo(iso(inicio), iso(fin))
-            }}
-            className="rounded-full border border-borde px-3 py-1 text-xs font-medium text-texto-oscuro/70 transition-colors hover:border-marca/40 hover:bg-marca/5 hover:text-marca"
-          >
-            Próximos 7 días
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const semana = finDeSemana(hoy)
-              aplicarAtajo(semana.desde, semana.hasta)
-            }}
-            className="rounded-full border border-borde px-3 py-1 text-xs font-medium text-texto-oscuro/70 transition-colors hover:border-marca/40 hover:bg-marca/5 hover:text-marca"
-          >
-            Esta semana
-          </button>
-          <button
-            type="button"
-            onClick={() => aplicarAtajo(inicioDeMes(mes), finDeMes(mes))}
-            className="rounded-full border border-borde px-3 py-1 text-xs font-medium text-texto-oscuro/70 transition-colors hover:border-marca/40 hover:bg-marca/5 hover:text-marca"
-          >
-            Mes completo
-          </button>
-          <button
-            type="button"
-            onClick={() => aplicarAtajo(inicioDeMes(sumarMes(mes, 1)), finDeMes(sumarMes(mes, 1)))}
-            className="rounded-full border border-borde px-3 py-1 text-xs font-medium text-texto-oscuro/70 transition-colors hover:border-marca/40 hover:bg-marca/5 hover:text-marca"
-          >
-            Mes siguiente
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { texto: 'Próximos 7 días', accion: () => {
+                const inicio7 = new Date()
+                const fin7 = new Date()
+                fin7.setDate(inicio7.getDate() + 6)
+                aplicarAtajo(iso(inicio7), iso(fin7))
+              } },
+              { texto: 'Esta semana', accion: () => {
+                const semana = finDeSemana(hoy)
+                aplicarAtajo(semana.desde, semana.hasta)
+              } },
+              { texto: 'Mes completo', accion: () => aplicarAtajo(inicioDeMes(mes), finDeMes(mes)) },
+              { texto: 'Mes siguiente', accion: () => aplicarAtajo(inicioDeMes(sumarMes(mes, 1)), finDeMes(sumarMes(mes, 1))) },
+            ].map((atajo) => (
+              <button
+                key={atajo.texto}
+                type="button"
+                onClick={atajo.accion}
+                className="rounded-full border border-borde px-2.5 py-1 text-[11px] font-medium text-texto-oscuro/65 transition-colors hover:border-marca/40 hover:bg-marca/[0.04] hover:text-marca"
+              >
+                {atajo.texto}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px] text-texto-oscuro/45">
+            <span className="flex items-center gap-1">
+              <span className="size-2 rounded-full bg-marca/40" /> Tarifa propia
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="size-2 rounded-full bg-acento/50" /> Cerrado
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="size-2 rounded-full border border-borde bg-white" /> Base
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 px-4 pb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-texto-oscuro/35">
+        <div className="grid grid-cols-7 border-y border-borde bg-fondo-claro/70 text-[10px] font-semibold uppercase tracking-wide text-texto-oscuro/40">
           {DIAS.map((dia) => (
-            <span key={dia}>{dia}</span>
+            <span key={dia} className="px-3 py-2">
+              {dia}
+            </span>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 p-4 pt-1">
+        <div className="grid grid-cols-7">
           {celdas.map((fecha, indice) => {
             if (fecha === null) {
-              return <span key={`vacio-${indice}`} />
+              return (
+                <span
+                  key={`vacio-${indice}`}
+                  className={cn(
+                    'min-h-[96px] border-b border-r border-borde bg-fondo-claro/30',
+                    indice % 7 === 6 && 'border-r-0',
+                  )}
+                />
+              )
             }
 
             const fila = porFecha.get(fecha)
@@ -423,8 +439,8 @@ export function InventoryForm({ room, isSubmitting, error, onSubmit, onCancel }:
             const tarifaDia = fila?.price ?? room.basePrice
             const enRango = !rangoInvalido && fecha >= desde && fecha <= hasta
             const esHoy = fecha === hoy
+            const extremo = fecha === desde || fecha === hasta
             const finDeSemanaDia = [0, 6].includes(new Date(`${fecha}T00:00:00`).getDay())
-            const ancho = Math.max(6, Math.min(100, (unidadesDia / Math.max(1, room.totalUnits)) * 100))
 
             return (
               <button
@@ -433,69 +449,68 @@ export function InventoryForm({ room, isSubmitting, error, onSubmit, onCancel }:
                 onClick={() => elegirDia(fecha)}
                 title={`${fechaLegible(fecha)} · ${unidadesDia} unidades · ${precio.format(tarifaDia)}`}
                 className={cn(
-                  'group relative flex h-[84px] flex-col justify-between rounded-xl border p-2.5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md',
-                  // Un solo fondo por estado: cn no resuelve conflictos de Tailwind.
-                  enRango
-                    ? 'border-marca bg-marca text-fondo-claro shadow-md'
-                    : cerradoDia
-                      ? 'border-acento/40 bg-acento/[0.07] text-acento'
-                      : fila
-                        ? 'border-marca/30 bg-marca/[0.06] text-texto-oscuro'
-                        : finDeSemanaDia
-                          ? 'border-borde bg-fondo-claro text-texto-oscuro'
-                          : 'border-borde bg-white text-texto-oscuro',
-                  esHoy && !enRango && 'ring-2 ring-acento/40',
+                  'group relative flex min-h-[96px] flex-col gap-1 border-b border-r border-borde p-2 text-left transition-colors',
+                  indice % 7 === 6 && 'border-r-0',
+                  cerradoDia ? 'bg-acento/[0.04]' : finDeSemanaDia ? 'bg-fondo-claro/40' : 'bg-white',
+                  enRango && 'bg-marca/[0.15]',
+                  extremo && 'ring-1 ring-inset ring-marca/40',
+                  'hover:bg-fondo-claro',
                 )}
               >
-                <span className="flex items-center justify-between text-[11px] font-semibold">
-                  {Number(fecha.slice(8, 10))}
-                  {esHoy && (
+                <span className="flex items-center justify-between">
+                  <span
+                    className={cn(
+                      'flex size-6 items-center justify-center rounded-full text-xs font-semibold',
+                      esHoy
+                        ? 'bg-acento text-white'
+                        : extremo
+                          ? 'bg-marca text-fondo-claro'
+                          : enRango
+                            ? 'text-marca'
+                            : 'text-texto-oscuro/70',
+                    )}
+                  >
+                    {Number(fecha.slice(8, 10))}
+                  </span>
+                  {extremo && !esHoy && <span className="text-[9px] font-bold uppercase text-marca">Fin</span>}
+                </span>
+
+                {cerradoDia ? (
+                  <span className="rounded-md bg-acento/10 px-1.5 py-1 text-[11px] font-semibold text-acento">
+                    Cerrado
+                  </span>
+                ) : (
+                  <span className="flex flex-col gap-1">
                     <span
                       className={cn(
-                        'rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase',
-                        enRango ? 'bg-white/20' : 'bg-acento text-white',
+                        'rounded-md px-1.5 py-1 text-[11px] font-bold leading-none',
+                        fila ? 'bg-marca/10 text-marca' : 'bg-fondo-claro text-texto-oscuro/70',
                       )}
                     >
-                      Hoy
+                      {precio.format(tarifaDia)}
                     </span>
-                  )}
-                  {cerradoDia && !esHoy && <span className="text-[9px] font-bold">Cerrado</span>}
-                </span>
-
-                <span className="flex flex-col gap-0.5">
-                  <span className={cn('text-sm font-bold leading-tight', enRango ? 'text-fondo-claro' : cerradoDia ? 'text-acento' : fila ? 'text-marca' : 'text-texto-oscuro')}>
-                    {precio.format(tarifaDia)}
+                    <span className="flex items-center gap-1.5 px-0.5 text-[10px] text-texto-oscuro/45">
+                      <span className="h-1 flex-1 overflow-hidden rounded-full bg-borde/60">
+                        <span
+                          className="block h-full rounded-full bg-marca/45"
+                          style={{
+                            width: `${Math.max(6, Math.min(100, (unidadesDia / Math.max(1, room.totalUnits)) * 100))}%`,
+                          }}
+                        />
+                      </span>
+                      {unidadesDia} u
+                    </span>
                   </span>
-                  <span className={cn('text-[11px]', enRango ? 'text-fondo-claro/80' : 'text-texto-oscuro/50')}>
-                    {unidadesDia} u
-                  </span>
-                </span>
-
-                <span
-                  className={cn(
-                    'absolute bottom-1.5 left-2 h-1 rounded-full',
-                    enRango ? 'bg-fondo-claro/40' : cerradoDia ? 'bg-acento/40' : 'bg-marca/30',
-                  )}
-                  style={{ width: `${ancho}%` }}
-                />
+                )}
               </button>
             )
           })}
         </div>
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-borde bg-fondo-claro/60 px-4 py-2.5 text-xs">
-          <span className="flex flex-wrap items-center gap-3 text-texto-oscuro/50">
-            <span className="flex items-center gap-1">
-              <span className="size-2.5 rounded-sm border border-marca/30 bg-marca/10" /> Tarifa propia
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2.5 rounded-sm border border-acento/40 bg-acento/10" /> Cerrado
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2.5 rounded-sm border border-borde bg-white" /> Usa la base
-            </span>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-borde bg-fondo-claro/50 px-4 py-2.5 text-xs">
+          <span className="text-texto-oscuro/50">
+            Haz clic en un día y luego en otro para armar el rango.
           </span>
-
           <span className="font-semibold text-texto-oscuro/70">
             {rangoInvalido
               ? 'Elige un rango'
