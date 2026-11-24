@@ -54,7 +54,7 @@ Esperado: `200` y `{"ok":true}`.
 Si no recuerdas la del administrador, al final de esta guía está el
 procedimiento para dejarla en una conocida.
 
-**Datos que hay cargados:** 5 hoteles y 10 agencias, 11 habitaciones con
+**Datos que hay cargados:** 11 hoteles y 10 agencias, 23 habitaciones con
 inventario y 11 paquetes publicados en 8 destinos (Cancún, Playa del Carmen,
 Tulum, Cozumel, Mérida, Valladolid, Izamal y Progreso).
 
@@ -123,7 +123,7 @@ invitaciones con enlace de túnel. Ten a mano la captura
 
 ## 3. Portal del socio — hotel (3 minutos)
 
-Cierra sesión y entra como `playa-azul@turismo.test`.
+Cierra sesión y entra como `playa-azul@turismo.test`. Al entrar cae directo en **Habitaciones**, que es la primera pantalla del portal para un hotel.
 
 **a. La navegación cambia según la categoría**
 

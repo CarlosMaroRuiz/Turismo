@@ -1,7 +1,7 @@
 ﻿# Cuentas de prueba: Playa del Carmen y Yucatán
 
 Ocho socios de demostración para alimentar el bot de Telegram y probar el portal:
-cinco hoteles y diez agencias, repartidos entre Quintana Roo (Cancún, Playa del Carmen, Tulum y Cozumel) y Yucatán (Mérida, Valladolid, Izamal y Progreso).
+once hoteles y diez agencias, repartidos entre Quintana Roo (Cancún, Playa del Carmen, Tulum y Cozumel) y Yucatán (Mérida, Valladolid, Izamal y Progreso).
 
 Todas las cuentas las crea el seeder `playa-yucatan`, así que se regeneran con:
 
@@ -31,6 +31,12 @@ Turismo123!
 | `coral-maya@turismo.test` | Hotel Coral Maya | Playa del Carmen | Doble estándar ($1,500), Suite familiar ($2,500) |
 | `hacienda-merida@turismo.test` | Hacienda Mérida Centro | Mérida | Habitación colonial ($1,600) |
 | `posada-valladolid@turismo.test` | Posada Valladolid | Valladolid | Cuarto doble ($1,200), Cuarto triple ($1,700) |
+| `casa-tulum@turismo.test` | Casa Tulum Boutique | Tulum | Cuarto selva ($2,300), Suite playa ($3,600) |
+| `cozumel-reef@turismo.test` | Cozumel Reef Hotel | Cozumel | Estándar arrecife ($1,900), Junior suite buceo ($2,800) |
+| `cancun-mar@turismo.test` | Hotel Cancún Mar | Cancún | Doble vista laguna ($2,100), Familiar vista mar ($3,200) |
+| `malecon-progreso@turismo.test` | Hotel Malecón Progreso | Progreso | Cuarto malecón ($1,300), Suite familiar ($1,900) |
+| `amarillo-izamal@turismo.test` | Hotel Amarillo Izamal | Izamal | Cuarto convento ($1,200), Suite amarilla ($1,700) |
+| `convento-valladolid@turismo.test` | Hotel El Convento | Valladolid | Cuarto claustro ($1,400), Suite cenote ($2,000) |
 
 Cada habitación tiene inventario con tarifa propia para los próximos 90 días, con
 un día cerrado cada 30 para poder probar el caso de "sin disponibilidad".

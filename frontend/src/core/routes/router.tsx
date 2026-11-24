@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        loader: () => redirect(PATHS.panelTeam),
+        element: LoadSuspense(() => import('@features/partner/PanelHome')),
       },
       {
         path: 'equipo',
