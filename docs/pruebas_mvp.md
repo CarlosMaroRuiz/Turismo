@@ -54,9 +54,11 @@ Esperado: `200` y `{"ok":true}`.
 Si no recuerdas la del administrador, al final de esta guía está el
 procedimiento para dejarla en una conocida.
 
-**Datos que hay cargados:** 11 hoteles y 10 agencias, 23 habitaciones con
-inventario y 11 paquetes publicados en 8 destinos (Cancún, Playa del Carmen,
-Tulum, Cozumel, Mérida, Valladolid, Izamal y Progreso).
+**Datos que hay cargados:** 17 hoteles y 10 agencias, 41 habitaciones con
+inventario y 11 paquetes publicados en 10 destinos (Cancún, Playa del Carmen,
+Tulum, Cozumel, Isla Mujeres, Bacalar, Mérida, Valladolid, Izamal y Progreso).
+El hotel de la demo, Playa Azul, tiene 8 tipos de habitación: desde $1,200
+hasta el penthouse de $11,500.
 
 ---
 

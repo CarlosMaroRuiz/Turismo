@@ -1,7 +1,7 @@
 ﻿# Cuentas de prueba: Playa del Carmen y Yucatán
 
 Ocho socios de demostración para alimentar el bot de Telegram y probar el portal:
-once hoteles y diez agencias, repartidos entre Quintana Roo (Cancún, Playa del Carmen, Tulum y Cozumel) y Yucatán (Mérida, Valladolid, Izamal y Progreso).
+diecisiete hoteles y diez agencias, repartidos entre Quintana Roo (Cancún, Playa del Carmen, Tulum, Cozumel, Isla Mujeres y Bacalar) y Yucatán (Mérida, Valladolid, Izamal y Progreso).
 
 Todas las cuentas las crea el seeder `playa-yucatan`, así que se regeneran con:
 
@@ -27,7 +27,7 @@ Turismo123!
 | Correo | Negocio | Zona | Habitaciones |
 |---|---|---|---|
 | `temptation@turismo.test` | Temptation Cancun Resort | Cancún | Trendy Garden View ($4,200), Bash Tower Suite ($6,900) |
-| `playa-azul@turismo.test` | Hotel Playa Azul | Playa del Carmen | Doble vista mar ($1,800), Junior suite ($2,900) |
+| `playa-azul@turismo.test` | Hotel Playa Azul | Playa del Carmen | 8 tipos: Doble vista mar ($1,800) hasta Penthouse terraza ($11,500) |
 | `coral-maya@turismo.test` | Hotel Coral Maya | Playa del Carmen | Doble estándar ($1,500), Suite familiar ($2,500) |
 | `hacienda-merida@turismo.test` | Hacienda Mérida Centro | Mérida | Habitación colonial ($1,600) |
 | `posada-valladolid@turismo.test` | Posada Valladolid | Valladolid | Cuarto doble ($1,200), Cuarto triple ($1,700) |
@@ -37,6 +37,12 @@ Turismo123!
 | `malecon-progreso@turismo.test` | Hotel Malecón Progreso | Progreso | Cuarto malecón ($1,300), Suite familiar ($1,900) |
 | `amarillo-izamal@turismo.test` | Hotel Amarillo Izamal | Izamal | Cuarto convento ($1,200), Suite amarilla ($1,700) |
 | `convento-valladolid@turismo.test` | Hotel El Convento | Valladolid | Cuarto claustro ($1,400), Suite cenote ($2,000) |
+| `riviera-suite@turismo.test` | Riviera Suites | Playa del Carmen | Suite estudio ($2,200), Suite dos recámaras ($3,800) |
+| `cancun-caribe@turismo.test` | Cancún Caribe Sol | Cancún | Familiar todo incluido ($4,100), Suite coral ($5,600) |
+| `tulum-jungla@turismo.test` | Tulum Jungle Lodge | Tulum | Cabaña selva ($2,100), Cabaña cenote ($3,100) |
+| `paseo-montejo@turismo.test` | Hotel Paseo Montejo | Mérida | Cuarto paseo ($1,750), Suite paseo ($2,600) |
+| `isla-mujeres@turismo.test` | Isla Mujeres Beach | Isla Mujeres | Cuarto playa norte ($2,400), Suite isla ($3,900) |
+| `bacalar-laguna@turismo.test` | Bacalar Laguna | Bacalar | Cuarto laguna ($1,950), Suite siete colores ($3,200) |
 
 Cada habitación tiene inventario con tarifa propia para los próximos 90 días, con
 un día cerrado cada 30 para poder probar el caso de "sin disponibilidad".
@@ -87,6 +93,8 @@ Cancún             -> región Benito Juárez (Quintana Roo)
 Playa del Carmen   -> región Solidaridad (Quintana Roo)
 Tulum              -> región Tulum (Quintana Roo)
 Cozumel            -> región Cozumel (Quintana Roo)
+Isla Mujeres       -> región Isla Mujeres (Quintana Roo)
+Bacalar            -> región Bacalar (Quintana Roo)
 Mérida             -> región Mérida (Yucatán)
 Valladolid         -> región Valladolid (Yucatán)
 Izamal             -> región Izamal (Yucatán)
